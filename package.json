@@ -1,0 +1,45 @@
+{
+  "name": "nicoclient",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NicoClient by Nicoweyin — an independent Minecraft launcher",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "package:win": "npm run build && electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "electron": "^35.7.5",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.8.3"
+  },
+  "build": {
+    "appId": "dev.nicoweyin.nicoclient",
+    "productName": "NicoClient",
+    "publish": [{ "provider": "github", "owner": "Nicoweyin", "repo": "NicoClient" }],
+    "generateUpdatesFilesForAllChannels": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "ui/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "artifactName": "NicoClient-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "createDesktopShortcut": false,
+      "include": "scripts/installer.nsh"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
+}

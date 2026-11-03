@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' https://cdn.modrinth.com">
+  <title>NicoClient</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="extras.css">
+  <script src="renderer.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><img src="../assets/icon.png" alt=""><div><strong>NicoClient</strong><small>BY NICOWEYIN</small></div></div>
+      <div class="nav-label">YOUR LAUNCHER</div>
+      <nav aria-label="Main navigation">
+        <button class="nav active" data-page="home">⌂ <span>Home</span></button>
+        <button class="nav" data-page="mods">◇ <span>Mods</span></button>
+        <button class="nav" data-page="cosmetics">✦ <span>Cosmetics</span></button>
+        <button class="nav" data-page="accounts">◉ <span>Accounts</span></button>
+        <button class="nav" data-page="settings">⚙ <span>Settings</span></button>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span> Development build <small>0.1.0</small></div>
+    </aside>
+    <main>
+      <header><span>YOUR SPACE TO PLAY</span><span class="badge">EARLY DEVELOPMENT</span></header>
+      <section class="page active" id="home">
+        <div class="hero"><div class="hero-content"><div class="eyebrow">WELCOME TO NICOCLIENT</div><h1>Make every<br><em>block count.</em></h1><p>Your Minecraft experience, built around you.</p><div class="hero-actions"><button class="play" disabled>▶ &nbsp; PLAY</button><div class="version"><small>SELECTED VERSION</small><strong>Java 1.21.11</strong></div></div><p class="notice">Game installation and launch are not available yet.</p></div><div class="hero-art"><img src="../assets/icon.png" alt=""></div></div>
+        <div class="cards"><article><span class="card-icon">✦</span><h2>Made for your game</h2><p>A dedicated client experience with a clean, personal interface.</p></article><article><span class="card-icon">◇</span><h2>Your own space</h2><p>NicoClient is designed to keep its files separate from your existing Minecraft installation.</p></article><article><span class="card-icon">↗</span><h2>More to come</h2><p>Client modules, profiles and customization are on the roadmap.</p></article></div>
+      </section>
+      <section class="page" id="mods"><div class="section-heading"><div class="eyebrow">MAKE IT YOURS</div><h1>Discover mods<span class="accent">.</span></h1><p>Explore Modrinth for Fabric · Minecraft 1.21.11</p></div><div class="panel"><form id="mod-search-form" class="search-row"><input id="mod-query" type="search" placeholder="Search Modrinth mods" aria-label="Search mods"><button class="secondary">Search</button></form><p id="mod-status" class="notice" role="status">Search to discover compatible projects.</p><progress id="mod-progress" max="100" value="0" hidden></progress><div id="mod-results" class="mod-grid"></div></div><div class="panel"><div class="section-bar"><div><div class="eyebrow">YOUR INSTANCE</div><h2>Installed mods</h2></div><button class="secondary" id="refresh-mods">Refresh</button></div><div id="installed-mods"></div></div></section>
+      <section class="page" id="cosmetics"><div class="section-heading"><div class="eyebrow">YOUR STYLE · ALWAYS FREE</div><h1>Cosmetics<span class="accent">.</span></h1><p>Make it yours. Settings are saved locally; in-game rendering is in development.</p></div><div class="panel"><div class="eyebrow">COMING TO FABRIC</div><h2>Cosmetic studio</h2><p>Capes, wings, particles, HUD styles and animations are planned. Your preferences do not yet change the game.</p><div id="cosmetic-settings" class="cosmetic-grid"></div><p id="cosmetic-status" class="notice" role="status"></p><button id="save-cosmetics" class="secondary">Save preferences</button></div></section>
+      <section class="page" id="accounts"><div class="section-heading"><div class="eyebrow">YOUR IDENTITY</div><h1>Accounts</h1><p>Connect your Microsoft account to play Minecraft Java Edition.</p></div><div class="panel"><h2>Microsoft account</h2><p>Sign in in your browser to verify your Minecraft Java account.</p><button class="secondary" id="sign-in">Connect Microsoft account</button> <button class="secondary" id="sign-out" hidden>Sign out</button><p class="notice" id="account-status" role="status">Sign-in lasts for this launcher session. Game launch is not available yet.</p><p class="notice">No passwords are collected by this launcher.</p></div></section>
+      <section class="page" id="settings"><div class="section-heading"><div class="eyebrow">MAKE IT YOURS</div><h1>Settings</h1><p>Configure your NicoClient experience.</p></div><div class="panel"><h2>Game settings</h2><p>RAM allocation, profiles and instance settings are coming soon.</p><h2>Mods</h2><p>Manage mods in NicoClient's dedicated folder.</p><button class="secondary" id="open-mods">Open Mods Folder</button><p class="notice" id="mods-status" role="status"></p></div><div class="panel"><div class="eyebrow">NICOCLIENT RELEASES</div><h2>Launcher updates</h2><p id="update-status" role="status">Checking update availability…</p><pre id="update-notes" class="release-notes" hidden></pre><progress id="update-progress" max="100" value="0" hidden></progress><div class="button-row"><button class="secondary" id="update-check">Check for Updates</button><button class="secondary" id="update-download" hidden>Download update</button><button class="secondary" id="update-install" hidden>Restart and install</button></div><p class="notice">Release update delivery has not yet been tested.</p></div></section>
+      <footer>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</footer>
+    </main>
+  </div>
+</body>
+</html>
