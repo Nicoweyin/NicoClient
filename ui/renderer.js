@@ -61,14 +61,24 @@ function renderUpdate(state) {
   const progress = document.getElementById('update-progress');
   progress.hidden = state.status !== 'downloading';
   progress.value = state.percent || 0;
-  document.getElementById('update-download').hidden = state.status !== 'available';
   document.getElementById('update-install').hidden = state.status !== 'downloaded';
+  const active = state.status === 'downloading' || state.status === 'downloaded';
+  document.getElementById('update-banner').hidden = !active;
+  if (active) {
+    const ready = state.status === 'downloaded';
+    document.getElementById('update-banner-title').textContent = ready ? `NicoClient ${state.version} is ready` : `Downloading NicoClient ${state.version}…`;
+    document.getElementById('update-banner-text').textContent = ready ? 'Restart now, or it installs the next time you start NicoClient.' : `${Math.round(state.percent || 0)}%`;
+    const bar = document.getElementById('update-banner-progress');
+    bar.hidden = ready;
+    bar.value = state.percent || 0;
+    document.getElementById('update-banner-install').hidden = !ready;
+  }
 }
 window.nicoClient.onUpdate(renderUpdate);
 window.nicoClient.updateState().then(renderUpdate);
 document.getElementById('update-check').addEventListener('click', () => window.nicoClient.checkUpdates());
-document.getElementById('update-download').addEventListener('click', () => window.nicoClient.downloadUpdate());
 document.getElementById('update-install').addEventListener('click', () => window.nicoClient.installUpdate());
+document.getElementById('update-banner-install').addEventListener('click', () => window.nicoClient.installUpdate());
 
 const modStatus = document.getElementById('mod-status');
 const modProgress = document.getElementById('mod-progress');

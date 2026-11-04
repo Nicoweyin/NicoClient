@@ -63,3 +63,7 @@
 
 ## 2026-11-04: version 0.3.1
 - The Cosmetics page and its code and test were removed. `npm.cmd test` and the smoke test passed afterward, and the installer was installed, started and uninstalled on this PC.
+
+## 2026-11-04: version 0.3.2, automatic updates
+- Real update test on this PC with a local server instead of GitHub: the installed 0.3.2 downloaded a 9.9.9 test build on its own, showed the banner on Home, and after clicking "Restart and update" was replaced by 9.9.9 and restarted. `latest.yml`, the blockmaps and the installer were served by a local server, and the test version was removed afterward.
+- Not tested: downloading from a real GitHub release, an update on another PC, an update that installs on the next start without the button, and the check every four hours.

@@ -8,7 +8,7 @@
 - The launcher creates `%APPDATA%\NicoClient` and its `mods`, `config`, `resourcepacks`, `shaderpacks` and `logs` folders on startup; the NSIS installer does the same.
 - Modrinth search, dependency-aware installation with SHA-512 and size checks, listing, toggling, uninstalling, update checks and one-click updates with rollback are implemented. Unknown local mods and incompatibilities require manual review.
 - The Cosmetics page was removed on 2026-11-04 because its settings had no effect in the game (last present in commit `74c58be`).
-- GitHub `electron-updater` integration targets `Nicoweyin/NicoClient`. Updater delivery from a published release has not been tested; see `RELEASE.md` for signing limitations. Existing installers in `release/` and `release-corrected/` are stale.
+- Installed builds check GitHub Releases for `Nicoweyin/NicoClient` at start and every four hours, download updates on their own, show them on Home, and install them on restart. This worked in a local end-to-end test, but no release is published yet. See `RELEASE.md` for signing limitations. Existing installers older than the newest version in `release/` and `release-corrected/` are stale.
 - Windows branding uses `NicoClient` for the app name, window title, packaged executable and NSIS shortcut, with AppUserModelID `dev.nicoweyin.nicoclient`.
 
 ## Fabric mod

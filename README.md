@@ -28,6 +28,6 @@ The Mods page searches Modrinth for Fabric 1.21.11, installs compatible versions
 
 ## Releases
 
-An unsigned Windows installer and `latest.yml` can be built with `npm.cmd run package:win` and are written to `release`; no upload occurs. The GitHub updater is configured but has not been tested against a published release. See `RELEASE.md` for signing limitations and the approval-gated release process.
+An unsigned Windows installer and `latest.yml` can be built with `npm.cmd run package:win` and are written to `release`; no upload occurs. Installed builds download updates from GitHub Releases on their own and install them on restart. That worked in a local test, but no release is published yet, so nothing arrives until one is. See `RELEASE.md` for signing limitations and the approval-gated release process.
 
 See `BUILD_STATUS.md`, `FEATURES.md`, `TEST_RESULTS.md`, and `RESUME.md` for progress.

@@ -10,7 +10,6 @@ contextBridge.exposeInMainWorld('nicoClient', {
   updateMod: (name: string) => ipcRenderer.invoke('mods-update', name),
   updateState: () => ipcRenderer.invoke('update-state'),
   checkUpdates: () => ipcRenderer.invoke('update-check'),
-  downloadUpdate: () => ipcRenderer.invoke('update-download'),
   installUpdate: () => ipcRenderer.invoke('update-install'),
   onUpdate: (callback: (state: unknown) => void) => ipcRenderer.on('update-state', (_event, state) => callback(state)),
   searchMods: (query: string) => ipcRenderer.invoke('mods-search', query),
