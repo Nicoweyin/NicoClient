@@ -31,3 +31,8 @@
 - Live Java runtime download into a temporary folder: 402 files; `java -version` reported 21.0.7. The folder was removed afterward.
 - `gradle runClientGameTest` (Minecraft 1.21.11, temporary world, development profile): passed with no mixin errors. Screenshots were reviewed by eye for all HUD modules, the menu, the HUD editor, Fullbright at night, Zoom, Low Fire while burning and the Trajectories path for a snowball.
 - Not tested: the launcher's authenticated PLAY flow end-to-end (blocked by the Minecraft Services 403), the official profile setup against a real `.minecraft` folder, multiplayer, real mouse dragging, real click counting and trajectory accuracy.
+
+## 2026-11-04: official launcher as the only way to play
+- NicoClient's own sign-in and game launch were removed, along with their tests; earlier results above for those parts no longer apply.
+- `npm.cmd test`, the Electron smoke test and `gradle build` were rerun after the change. The tests use a temporary `.minecraft` folder and mocked services; the smoke test mocks opening the official launcher.
+- Not tested: starting the game from the official launcher with the NicoClient profile.

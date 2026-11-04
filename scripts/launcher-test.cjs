@@ -5,69 +5,15 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { download } = require('../dist/game-install.js');
-const { installJavaRuntime } = require('../dist/java-runtime.js');
-const { installLocalMod } = require('../dist/game-launch.js');
+const { installLocalMod, setupOfficialProfile } = require('../dist/official-profile.js');
 const { installMod, ensureMod, updateMod, checkModUpdate } = require('../dist/modrinth.js');
-const { defaultMemory, maximumMemory, loadSettings, saveSettings } = require('../dist/settings.js');
 
-const GB = 1024 * 1048576;
 const sha1 = bytes => crypto.createHash('sha1').update(bytes).digest('hex');
 const sha512 = bytes => crypto.createHash('sha512').update(bytes).digest('hex');
 async function withDir(run) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'nicoclient-test-'));
   try { return await run(dir); } finally { await fs.rm(dir, { recursive: true, force: true }); }
 }
-
-test('download retries temporary failures but not a wrong checksum', () => withDir(async dir => {
-  const body = Buffer.from('file');
-  const file = { path: 'a', url: 'https://piston-data.mojang.com/a', sha1: sha1(body), size: body.length };
-  let calls = 0;
-  await download(file, path.join(dir, 'a'), dir, async () => {
-    if (++calls === 1) throw new TypeError('fetch failed');
-    if (calls === 2) return new Response('', { status: 503 });
-    return new Response(body);
-  }, 1);
-  assert.equal(calls, 3);
-  calls = 0;
-  await assert.rejects(download({ ...file, sha1: '0'.repeat(40) }, path.join(dir, 'b'), dir, async () => { calls++; return new Response(body); }, 1), /checksum/);
-  assert.equal(calls, 1);
-  calls = 0;
-  await assert.rejects(download(file, path.join(dir, 'c'), dir, async () => { calls++; return new Response('', { status: 404 }); }, 1), /HTTP 404/);
-  assert.equal(calls, 1);
-}));
-
-test('a damaged game file is kept aside and downloaded again', () => withDir(async dir => {
-  const body = Buffer.from('good');
-  const target = path.join(dir, 'lib.jar');
-  await fs.writeFile(target, 'damaged');
-  await download({ path: 'lib.jar', url: 'https://piston-data.mojang.com/l', sha1: sha1(body), size: body.length }, target, dir, async () => new Response(body), 1);
-  assert.equal(await fs.readFile(target, 'utf8'), 'good');
-  const names = await fs.readdir(dir);
-  const damaged = names.find(name => name.endsWith('.damaged'));
-  assert.ok(damaged);
-  assert.equal(await fs.readFile(path.join(dir, damaged), 'utf8'), 'damaged');
-}));
-
-test('installs Mojang Java runtime with checksums and refuses unsafe paths', () => withDir(async dir => {
-  const java = Buffer.from('java-binary');
-  const manifest = Buffer.from(JSON.stringify({ files: { bin: { type: 'directory' }, 'bin/java.exe': { type: 'file', downloads: { raw: { sha1: sha1(java), size: java.length, url: 'https://piston-data.mojang.com/java' } } } } }));
-  const index = { 'windows-x64': { 'java-runtime-delta': [{ manifest: { sha1: sha1(manifest), url: 'https://piston-meta.mojang.com/manifest' } }] } };
-  const responses = async url => {
-    if (String(url).includes('java-runtime')) return new Response(JSON.stringify(index));
-    if (String(url).endsWith('/manifest')) return new Response(manifest);
-    return new Response(java);
-  };
-  const seen = [];
-  const executable = await installJavaRuntime(dir, 'java-runtime-delta', (done, total) => seen.push([done, total]), responses);
-  assert.equal(executable, path.join(dir, 'runtime', 'java-runtime-delta', 'bin', 'java.exe'));
-  assert.deepEqual(await fs.readFile(executable), java);
-  assert.deepEqual(seen.at(-1), [1, 1]);
-  await assert.rejects(installJavaRuntime(dir, '../evil', () => {}, responses), /Invalid Java runtime/);
-  const unsafe = Buffer.from(JSON.stringify({ files: { 'bin/java.exe': { type: 'file', downloads: { raw: { sha1: sha1(java), size: java.length, url: 'https://piston-data.mojang.com/java' } } }, '../../evil.dll': { type: 'file', downloads: { raw: { sha1: sha1(java), size: java.length, url: 'https://piston-data.mojang.com/java' } } } } }));
-  const unsafeIndex = { 'windows-x64': { 'java-runtime-delta': [{ manifest: { sha1: sha1(unsafe), url: 'https://piston-meta.mojang.com/manifest' } }] } };
-  await assert.rejects(installJavaRuntime(dir, 'java-runtime-delta', () => {}, async url => String(url).includes('java-runtime') ? new Response(JSON.stringify(unsafeIndex)) : new Response(unsafe)), /Unsafe/);
-}));
 
 test('a rebuilt NicoClient JAR replaces the old one instead of blocking PLAY', () => withDir(async dir => {
   const source = path.join(dir, 'nicoclient-fabric-0.1.0.jar');
@@ -172,15 +118,38 @@ test('a failed update restores the old mod file', () => withDir(async dir => {
   } finally { restore(); }
 }));
 
-test('memory settings use sensible limits and reject bad values', () => withDir(async dir => {
-  assert.equal(maximumMemory(4 * GB), 2048);
-  assert.equal(defaultMemory(4 * GB), 2048);
-  assert.equal(defaultMemory(32 * GB), 4096);
-  assert.equal(maximumMemory(GB), 1024);
-  assert.equal((await loadSettings(dir)).memoryMb, defaultMemory());
-  await saveSettings(dir, { memoryMb: 1536 });
-  assert.equal((await loadSettings(dir)).memoryMb, 1536);
-  for (const memoryMb of [0, 1000, 999999, '4096', undefined]) await assert.rejects(saveSettings(dir, { memoryMb }), /Invalid memory/);
-  await fs.writeFile(path.join(dir, 'nicoclient-launcher.json'), 'not json');
-  assert.equal((await loadSettings(dir)).memoryMb, defaultMemory());
+test('the official profile is added once and other profiles stay untouched', () => withDir(async dir => {
+  const minecraft = path.join(dir, '.minecraft'), game = path.join(dir, 'NicoClient'), jar = path.join(dir, 'nicoclient-fabric-0.1.0.jar');
+  await fs.mkdir(minecraft); await fs.writeFile(jar, 'mod');
+  const file = path.join(minecraft, 'launcher_profiles.json');
+  const fabricProfile = { id: 'fabric-loader-0.20.1-1.21.11', inheritsFrom: '1.21.11', mainClass: 'net.fabricmc.loader.impl.launch.knot.KnotClient' };
+  const restore = modrinth([fabricNew]);
+  const mocked = global.fetch;
+  global.fetch = async (input, init) => String(input).startsWith('https://meta.fabricmc.net/') ? Response.json(fabricProfile) : mocked(input, init);
+  try {
+    await assert.rejects(setupOfficialProfile(minecraft, game, jar), /has not been set up yet/);
+    const other = { name: 'Mine', lastVersionId: 'latest-release' };
+    await fs.writeFile(file, JSON.stringify({ profiles: { keep: other }, settings: { locale: 'de' } }));
+    await setupOfficialProfile(minecraft, game, jar);
+    await setupOfficialProfile(minecraft, game, jar);
+    const saved = JSON.parse(await fs.readFile(file, 'utf8'));
+    assert.deepEqual(saved.profiles.keep, other);
+    assert.deepEqual(saved.settings, { locale: 'de' });
+    const added = Object.values(saved.profiles).filter(profile => profile.name === 'NicoClient Fabric 1.21.11');
+    assert.equal(added.length, 1);
+    assert.equal(added[0].lastVersionId, fabricProfile.id);
+    assert.equal(added[0].gameDir, game);
+    assert.deepEqual((await fs.readdir(path.join(game, 'mods'))).sort(), ['fabric-api-2.jar', 'nicoclient-fabric-0.1.0.jar']);
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(minecraft, 'versions', fabricProfile.id, fabricProfile.id + '.json'), 'utf8')), fabricProfile);
+    assert.deepEqual((await fs.readdir(minecraft)).sort(), ['launcher_profiles.json', 'versions']);
+  } finally { restore(); }
+}));
+
+test('an unknown profile with the NicoClient name is not overwritten', () => withDir(async dir => {
+  const minecraft = path.join(dir, '.minecraft'), jar = path.join(dir, 'nicoclient-fabric-0.1.0.jar');
+  await fs.mkdir(minecraft); await fs.writeFile(jar, 'mod');
+  const text = JSON.stringify({ profiles: { a: { name: 'NicoClient Fabric 1.21.11', lastVersionId: 'other', gameDir: dir } } });
+  await fs.writeFile(path.join(minecraft, 'launcher_profiles.json'), text);
+  await assert.rejects(setupOfficialProfile(minecraft, path.join(dir, 'game'), jar), /different profile/);
+  assert.equal(await fs.readFile(path.join(minecraft, 'launcher_profiles.json'), 'utf8'), text);
 }));

@@ -1,6 +1,6 @@
 # Feature roadmap
 
-The launcher includes a Windows x64 PLAY workflow for official Minecraft 1.21.11 downloads, Fabric Loader and API installation, NicoClient JAR installation, ownership recheck, progress and game output. Installation components were tested; real-account sign-in and an end-to-end launch have not been verified. See `BUILD_STATUS.md` and `TEST_RESULTS.md`.
+PLAY sets up a NicoClient profile in the official Minecraft Launcher and opens it; the official launcher handles sign-in and starting the game. See `BUILD_STATUS.md` and `TEST_RESULTS.md`.
 
 The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fullbright, Reduced Particles, Trajectories, a Right Shift module screen and a draggable HUD editor. "Client test" means it ran in a real Minecraft 1.21.11 client through `gradle runClientGameTest` in a temporary single-player world, with screenshots reviewed by eye. That is not yet the same as normal play through the launcher: multiplayer, real mouse dragging and long sessions remain untested. Zoom uses a configurable 2x/4x/8x factor and a rebindable hold key (default C). Fullbright uses configurable ambient-light levels; Trajectories has an optional impact marker. FPS retains its initially unbound separate toggle. Module state, favorites, settings and HUD positions are stored in `config/nicoclient.properties`. Other in-game items below remain planned. The launcher cosmetic controls do not render in Fabric. See `fabric-mod/LOCAL_TESTING.md` for testing and prediction limitations.
 

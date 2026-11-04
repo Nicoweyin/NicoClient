@@ -7,7 +7,7 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node --test scripts/auth-test.cjs scripts/modrinth-test.cjs scripts/game-install-test.cjs scripts/game-launch-test.cjs scripts/launcher-test.cjs",
+    "test": "npm run build && node --test scripts/modrinth-test.cjs scripts/launcher-test.cjs",
     "start": "npm run build && electron .",
     "package:win": "npm run build && electron-builder --win nsis --publish never"
   },
@@ -25,7 +25,7 @@
     "directories": {
       "output": "release"
     },
-    "extraResources": ["COPYRIGHT.md", "THIRD_PARTY_NOTICES.md", { "from": "fabric-mod/build/libs/nicoclient-fabric-0.1.0.jar", "to": "nicoclient-fabric-0.1.0.jar" }, { "from": "fabric-mod/build/libs/nicoclient-bootstrap.jar", "to": "nicoclient-bootstrap.jar" }],
+    "extraResources": ["COPYRIGHT.md", "THIRD_PARTY_NOTICES.md", { "from": "fabric-mod/build/libs/nicoclient-fabric-0.1.0.jar", "to": "nicoclient-fabric-0.1.0.jar" }],
     "files": [
       "dist/**/*",
       "ui/**/*",

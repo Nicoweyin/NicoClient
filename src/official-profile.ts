@@ -1,17 +1,31 @@
-import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { copyFile, lstat, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { installLocalMod } from './game-launch';
 import { ensureMod } from './modrinth';
 
 const VERSION = 'fabric-loader-0.20.1-1.21.11';
 const NAME = 'NicoClient Fabric 1.21.11';
 const PROFILE_URL = 'https://meta.fabricmc.net/v2/versions/loader/1.21.11/0.20.1/profile/json';
 
+// The NicoClient JAR is owned by the launcher, so a rebuilt or updated mod simply replaces the old one.
+export async function installLocalMod(source: string, mods: string): Promise<void> {
+  const info = await stat(source).catch(() => undefined);
+  if (!info?.isFile()) throw new Error('The built NicoClient Fabric JAR is missing. Build the Fabric mod first.');
+  const target = path.join(mods, path.basename(source));
+  if (await lstat(`${target}.disabled`).catch(() => undefined)) throw new Error('The NicoClient mod is disabled. Enable it on the Mods page first.');
+  const existing = await lstat(target).catch(() => undefined);
+  if (existing && (!existing.isFile() || existing.isSymbolicLink())) throw new Error('The existing NicoClient mod is not a regular file.');
+  const hash = (buffer: Buffer) => createHash('sha256').update(buffer).digest('hex');
+  if (existing && hash(await readFile(source)) === hash(await readFile(target))) return;
+  const temp = `${target}.${process.pid}.tmp`;
+  try { await copyFile(source, temp); await rename(temp, target); }
+  finally { await unlink(temp).catch(() => {}); }
+}
+
 // Only adds NicoClient's own profile and files; existing profiles and accounts are left untouched.
 export async function setupOfficialProfile(minecraft: string, game: string, modJar: string): Promise<void> {
   const profileFile = path.join(minecraft, 'launcher_profiles.json');
-  const original = await readFile(profileFile).catch(() => { throw new Error('No official launcher profile file was found. Start the official Minecraft Launcher once, close it, and retry.'); });
+  const original = await readFile(profileFile).catch(() => { throw new Error('The official Minecraft Launcher has not been set up yet. Install it, start it once, close it, and press PLAY again.'); });
   const profiles = JSON.parse(original.toString('utf8'));
   if (!profiles.profiles || typeof profiles.profiles !== 'object' || Array.isArray(profiles.profiles)) throw new Error('Unrecognized launcher profile file; it was not changed.');
   const matches = (Object.values(profiles.profiles) as any[]).filter(profile => profile?.name === NAME);

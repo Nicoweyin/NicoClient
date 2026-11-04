@@ -18,141 +18,23 @@ document.getElementById('open-mods').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('official-launcher').addEventListener('click', async () => {
-  const status = document.getElementById('official-launcher-status');
-  try {
-    await window.nicoClient.openOfficialLauncher();
-    status.textContent = 'Opening Minecraft Launcher. Select the NicoClient Fabric profile there.';
-  } catch {
-    status.textContent = 'Could not open Minecraft Launcher. Start it from the Windows Start menu.';
-  }
-});
-
-document.getElementById('official-profile').addEventListener('click', async event => {
-  const status = document.getElementById('official-launcher-status');
-  event.target.disabled = true;
-  status.textContent = 'Setting up the NicoClient profile…';
-  try {
-    await window.nicoClient.setupOfficialProfile();
-    status.textContent = 'Profile ready. Open the official launcher and choose NicoClient Fabric 1.21.11.';
-    void refreshMods();
-  } catch (error) {
-    status.textContent = friendlyError(error, 'Could not set up the profile.');
-  } finally { event.target.disabled = false; }
-});
-
 // Electron prefixes IPC errors with its channel name; users only need the reason.
 function friendlyError(error, fallback) {
   const message = error instanceof Error ? error.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '') : '';
   return message || fallback;
 }
 
-function setAccount(name) {
-  document.getElementById('account-chip').textContent = name ? name.toUpperCase() : 'NOT SIGNED IN';
-  document.getElementById('account-chip').classList.toggle('connected', Boolean(name));
-  document.getElementById('tile-account').textContent = name || 'Not signed in';
-  if (!play.disabled) gameStatus.textContent = name ? `Ready to play as ${name}.` : 'Sign in with a Minecraft Java account to play.';
-}
-
-const signInButton = document.getElementById('sign-in');
-const signOutButton = document.getElementById('sign-out');
-const removeAccountButton = document.getElementById('remove-account');
-const switchAccountButton = document.getElementById('switch-account');
-const accountStatus = document.getElementById('account-status');
-async function connectAccount() {
-  signInButton.disabled = true;
-  switchAccountButton.disabled = true;
-  accountStatus.textContent = 'Complete Microsoft sign-in in your browser…';
-  try {
-    const result = await window.nicoClient.signIn();
-    if (result.ok) {
-      accountStatus.textContent = `Minecraft Java account verified: ${result.name}.`;
-      setAccount(result.name);
-      signInButton.hidden = true;
-      signOutButton.hidden = false;
-      removeAccountButton.hidden = false;
-      switchAccountButton.hidden = false;
-    } else {
-      const message = result.message || 'Sign-in failed.';
-      accountStatus.textContent = /HTTP 403/.test(message) ? `${message} Until this app is approved, you can play through the official launcher on the Home page.` : message;
-    }
-  } catch {
-    accountStatus.textContent = 'Sign-in could not be started. Please try again.';
-  } finally {
-    signInButton.disabled = false;
-    switchAccountButton.disabled = false;
-  }
-}
-signInButton.addEventListener('click', connectAccount);
-async function clearAccount(remove) {
-  signOutButton.disabled = true;
-  removeAccountButton.disabled = true;
-  switchAccountButton.disabled = true;
-  try {
-    if (remove) await window.nicoClient.removeAccount();
-    else await window.nicoClient.signOut();
-    signOutButton.hidden = true;
-    removeAccountButton.hidden = true;
-    switchAccountButton.hidden = true;
-    signInButton.hidden = false;
-    setAccount();
-    accountStatus.textContent = remove ? 'Account removed from this NicoClient session. Choose an account when signing in again.' : 'Signed out of NicoClient. Choose an account when signing in again.';
-  } catch {
-    accountStatus.textContent = 'Could not clear the launcher account session. Please try again.';
-  } finally {
-    signOutButton.disabled = false;
-    removeAccountButton.disabled = false;
-    switchAccountButton.disabled = false;
-  }
-}
-signOutButton.addEventListener('click', () => clearAccount(false));
-removeAccountButton.addEventListener('click', () => {
-  if (confirm('Remove the connected account from this NicoClient session? Browser accounts and Minecraft data will not be removed.')) void clearAccount(true);
-});
-switchAccountButton.addEventListener('click', async () => {
-  signOutButton.disabled = true;
-  removeAccountButton.disabled = true;
-  switchAccountButton.disabled = true;
-  try {
-    await window.nicoClient.signOut();
-    setAccount();
-    signOutButton.hidden = true;
-    removeAccountButton.hidden = true;
-    switchAccountButton.hidden = true;
-    signInButton.hidden = false;
-    await connectAccount();
-  } catch {
-    accountStatus.textContent = 'Could not switch the launcher account. Please try again.';
-  } finally {
-    signOutButton.disabled = false;
-    removeAccountButton.disabled = false;
-    switchAccountButton.disabled = false;
-  }
-});
-
 const play = document.getElementById('play');
 const gameStatus = document.getElementById('game-status');
-const gameProgress = document.getElementById('game-progress');
-const gameLog = document.getElementById('game-log');
-const stopGame = document.getElementById('stop-game');
-const logPanel = document.getElementById('log-panel');
-stopGame.addEventListener('click', () => {
-  if (confirm('Stop Minecraft now? Unsaved progress may be lost.')) void window.nicoClient.stopGame();
-});
-document.getElementById('copy-log').addEventListener('click', () => { void navigator.clipboard.writeText(gameLog.textContent); });
-window.nicoClient.onGameState(state => {
-  gameStatus.textContent = state.message;
-  stopGame.hidden = state.status !== 'running';
-  if (state.status === 'error') logPanel.open = true;
-  if (typeof state.percent === 'number') { gameProgress.hidden = false; gameProgress.value = state.percent; }
-  if (state.log) { gameLog.textContent = (gameLog.textContent + state.log + '\n').slice(-30000); gameLog.scrollTop = gameLog.scrollHeight; }
-  if (state.status === 'running' && state.percent === 100) gameProgress.hidden = true;
-  if (state.status === 'exited' || state.status === 'error') { play.disabled = false; gameProgress.hidden = true; void refreshMods(); }
-});
 play.addEventListener('click', async () => {
-  play.disabled = true; gameLog.textContent = ''; gameStatus.textContent = 'Preparing Minecraft…';
-  try { const result = await window.nicoClient.play(); if (!result.ok) { gameStatus.textContent = result.message; play.disabled = false; } }
-  catch { gameStatus.textContent = 'Could not start the game installation.'; play.disabled = false; }
+  play.disabled = true;
+  gameStatus.textContent = 'Preparing the NicoClient profile…';
+  try {
+    const result = await window.nicoClient.play();
+    gameStatus.textContent = result.ok ? 'Opening the Minecraft Launcher. Choose NicoClient Fabric 1.21.11 there and press Play. If the profile is missing, close the launcher and press PLAY again.' : result.message;
+    void refreshMods();
+  } catch { gameStatus.textContent = 'Could not prepare Minecraft.'; }
+  finally { play.disabled = false; }
 });
 
 function renderUpdate(state) {
@@ -259,30 +141,11 @@ document.getElementById('mod-search-form').addEventListener('submit', async even
 });
 void refreshMods();
 
-const memory = document.getElementById('memory');
-const memoryValue = document.getElementById('memory-value');
-const memoryStatus = document.getElementById('memory-status');
-function showMemory() {
-  const text = `${(Number(memory.value) / 1024).toFixed(1).replace('.0', '')} GB`;
-  memoryValue.textContent = text;
-  document.getElementById('tile-memory').textContent = text;
-}
-memory.addEventListener('input', showMemory);
-memory.addEventListener('change', async () => {
-  try { await window.nicoClient.saveSettings({ memoryMb: Number(memory.value) }); memoryStatus.textContent = 'Saved. Applies the next time you press PLAY.'; }
-  catch { memoryStatus.textContent = 'Could not save the memory setting.'; }
-});
 document.getElementById('open-game').addEventListener('click', async () => {
   try { await window.nicoClient.openGameFolder(); }
   catch { document.getElementById('mods-status').textContent = 'Could not open the game folder.'; }
 });
-window.nicoClient.launcherInfo().then(info => {
-  document.getElementById('app-version').textContent = info.version;
-  memory.max = info.maximumMemoryMb;
-  memory.value = info.settings.memoryMb;
-  showMemory();
-  setAccount(info.account);
-}).catch(() => {});
+window.nicoClient.launcherInfo().then(info => { document.getElementById('app-version').textContent = info.version; }).catch(() => {});
 
 const cosmeticFields = {
   cape: ['none', 'classic', 'gradient'], wings: ['none', 'classic', 'glow'],

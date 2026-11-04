@@ -38,16 +38,6 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-sourceSets {
-    bootstrap { java.srcDir 'src/bootstrap/java' }
-}
-
-tasks.register('bootstrapJar', Jar) {
-    archiveFileName = 'nicoclient-bootstrap.jar'
-    from sourceSets.bootstrap.output
-}
-tasks.named('build') { dependsOn tasks.named('bootstrapJar') }
-
 jar {
     from('../COPYRIGHT.md')
 }
