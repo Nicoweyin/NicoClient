@@ -14,6 +14,14 @@ Requires Node.js, npm, and Java 21 or later. Build `fabric-mod/` with Gradle bef
 
 Run `npm.cmd test` for the launcher tests and `gradle runClientGameTest` in `fabric-mod/` to run the mod in a real Minecraft client with a temporary world; that test uses a development profile, not your account or game data, and opens a game window.
 
+## Sharing with friends
+
+Run `gradle build` in `fabric-mod/`, then `npm.cmd run package:win`, and send `release/NicoClient-Setup-<version>.exe`. It installs for the current Windows user and adds Start menu and desktop shortcuts. Friends need the official Minecraft Launcher with their own Minecraft Java account. The installer is unsigned, so Windows SmartScreen shows a warning: choose **More info**, then **Run anyway**.
+
+## In-game controls
+
+Right Shift opens the menu. Left click a module to switch it, right click to configure it, including a toggle key. **Settings** holds the accent color, HUD size, background and text color. **Edit HUD** moves HUD modules; right click one there to configure it.
+
 ## Mods and cosmetics
 
 The Mods page searches Modrinth for Fabric 1.21.11, installs compatible versions and required dependencies with SHA-512 verification, and manages files in the isolated mods folder. Update checks identify newer versions and offer a one-click update that replaces the old file, restoring it if the update fails. Mod compatibility and dependencies cannot be guaranteed for unrecognized local files. Cosmetics preferences are stored locally, but in-game rendering is not implemented.

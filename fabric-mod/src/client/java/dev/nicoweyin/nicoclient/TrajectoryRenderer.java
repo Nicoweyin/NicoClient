@@ -63,7 +63,7 @@ public final class TrajectoryRenderer {
             if (hit) break;
             velocity = velocity.scale(0.99).add(0, bow || potion ? -0.05 : -0.03, 0);
         }
-        prediction = new Prediction(List.copyOf(points), hit, NicoClientMod.MODULES.trajectoryMarker);
+        prediction = new Prediction(List.copyOf(points), hit, NicoClientMod.MODULES.trajectoryMarker.on());
     }
 
     private static boolean supported(ItemStack stack) {

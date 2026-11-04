@@ -20,6 +20,14 @@ abstract class AnimatedScreen extends Screen {
 
     protected abstract void draw(GuiGraphics g, int mouseX, int mouseY);
 
+    /** Screens can be returned to, so every visit animates in again. */
+    @Override public void added() {
+        open = 0;
+        lastFrame = 0;
+        closing = false;
+        next = null;
+    }
+
     @Override public final void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
         long now = System.nanoTime();
         seconds = lastFrame == 0 ? 0 : Math.min(0.1f, (now - lastFrame) / 1e9f);

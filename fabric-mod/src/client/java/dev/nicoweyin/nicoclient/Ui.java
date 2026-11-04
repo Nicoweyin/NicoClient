@@ -17,7 +17,8 @@ import java.util.Map;
 /** Shared look of NicoClient: colors, smooth rounded shapes and animation helpers. */
 public final class Ui {
     public static final int PANEL = 0xF60D0F1E, SIDEBAR = 0xFF14172A, SURFACE = 0xFF171A2E, SURFACE_HOVER = 0xFF232743;
-    public static final int ACCENT = 0xFF736AF5, ACCENT_LIGHT = 0xFFB0A6FF, TEXT = 0xFFF3F3FF, MUTED = 0xFF8A90AE, OFF = 0xFF2E3252, HAIRLINE = 0xFF2A2E4A;
+    private static final int[] ACCENTS = {0xFF736AF5, 0xFF4C8DFF, 0xFF22B8CF, 0xFF34C77B, 0xFFEC5FA6};
+    public static final int TEXT = 0xFFF3F3FF, MUTED = 0xFF8A90AE, OFF = 0xFF2E3252, HAIRLINE = 0xFF2A2E4A;
     private static final Map<Integer, Identifier> CIRCLES = new HashMap<>();
     private static final Style FONT = Style.EMPTY.withFont(new FontDescription.Resource(Identifier.fromNamespaceAndPath("nicoclient", "inter")));
 
@@ -73,7 +74,7 @@ public final class Ui {
     }
 
     public static void toggle(GuiGraphics g, float x, float y, float amount, float alpha) {
-        rounded(g, x, y, 24, 12, 6, alpha(mix(OFF, ACCENT, amount), alpha));
+        rounded(g, x, y, 24, 12, 6, alpha(mix(OFF, accent(), amount), alpha));
         rounded(g, x + 2 + amount * 12, y + 2, 8, 8, 4, alpha(TEXT, alpha));
     }
 
@@ -90,6 +91,10 @@ public final class Ui {
         if (width(text) <= width) return text;
         return Minecraft.getInstance().font.substrByWidth(styled(text), Math.max(0, width - width("..."))).getString() + "...";
     }
+
+    public static int accent() { return ACCENTS[NicoClientMod.MODULES.accent.index()]; }
+
+    public static int accentLight() { return mix(accent(), 0xFFFFFFFF, 0.4f); }
 
     public static int mix(int from, int to, float t) {
         t = Math.max(0, Math.min(1, t));
@@ -122,6 +127,7 @@ public final class Ui {
     }
 
     public static void click() {
+        if (!NicoClientMod.MODULES.clickSounds.on()) return;
         Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.2f, 0.3f));
     }
 }

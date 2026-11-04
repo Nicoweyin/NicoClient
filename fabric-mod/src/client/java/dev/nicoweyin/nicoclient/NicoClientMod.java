@@ -6,6 +6,10 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.fog.FogRenderer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
@@ -13,6 +17,10 @@ import org.lwjgl.glfw.GLFW;
 public final class NicoClientMod implements ClientModInitializer {
     public static final ModuleManager MODULES = new ModuleManager();
     public static KeyMapping zoomKey, menuKey;
+    private static boolean sprintApplied, sneakApplied, fogApplied;
+    private static float zoomAmount = 1;
+    private static long lastZoomFrame;
+
     @Override
     public void onInitializeClient() {
         MODULES.load();
@@ -24,8 +32,63 @@ public final class NicoClientMod implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggle.consumeClick()) { MODULES.fps.enabled = !MODULES.fps.enabled; MODULES.save(); }
             while (gui.consumeClick()) if (client.screen == null) client.setScreen(new NicoScreen());
+            applyOptions(client);
         });
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("nicoclient", "hud"), (graphics, delta) -> HudRenderer.render(graphics));
+        HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, vanilla -> (graphics, delta) -> {
+            Minecraft client = Minecraft.getInstance();
+            if (MODULES.crosshair.enabled && client.options.getCameraType().isFirstPerson() && !client.options.hideGui) HudRenderer.crosshair(graphics);
+            else vanilla.render(graphics, delta);
+        });
+    }
+
+    /** Called for every real key press. Hotkeys work during play only, so typing in chat or menus never toggles a module. */
+    public static void onKeyPressed(int key) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.screen != null || client.player == null) return;
+        for (ModuleManager.Module module : MODULES.modules) {
+            if (module.hotkey != key || module == MODULES.zoom) continue;
+            if (module == MODULES.copyCoords) {
+                if (module.enabled) copyCoordinates(client);
+                continue;
+            }
+            module.enabled = !module.enabled;
+            MODULES.save();
+            client.player.displayClientMessage(Component.literal(module.name + (module.enabled ? " on" : " off")), true);
+        }
+    }
+
+    private static void copyCoordinates(Minecraft client) {
+        BlockPos pos = client.player.blockPosition();
+        String text = pos.getX() + " " + pos.getY() + " " + pos.getZ();
+        client.keyboardHandler.setClipboard(text);
+        client.player.displayClientMessage(Component.literal("Copied " + text), true);
+    }
+
+    /** Uses Minecraft's own options, and only touches them when a module changes state. */
+    private static void applyOptions(Minecraft client) {
+        if (MODULES.toggleSprint.enabled != sprintApplied) {
+            sprintApplied = MODULES.toggleSprint.enabled;
+            client.options.toggleSprint().set(sprintApplied);
+        }
+        if (MODULES.toggleSneak.enabled != sneakApplied) {
+            sneakApplied = MODULES.toggleSneak.enabled;
+            client.options.toggleCrouch().set(sneakApplied);
+        }
+        if (MODULES.noFog.enabled != fogApplied) {
+            fogApplied = MODULES.noFog.enabled;
+            if (FogRenderer.toggleFog() == fogApplied) FogRenderer.toggleFog();
+        }
+    }
+
+    /** How far the view is zoomed in right now; moves gently unless Smooth zoom is off. */
+    public static float zoomAmount(boolean held) {
+        float target = held ? MODULES.zoomFactor.get() : 1;
+        long now = System.nanoTime();
+        float seconds = lastZoomFrame == 0 ? 0 : Math.min(0.1f, (now - lastZoomFrame) / 1e9f);
+        lastZoomFrame = now;
+        zoomAmount = MODULES.zoomSmooth.on() ? Ui.approach(zoomAmount, target, seconds, 14) : target;
+        return zoomAmount;
     }
 }

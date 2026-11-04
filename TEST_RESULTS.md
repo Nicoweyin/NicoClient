@@ -47,3 +47,10 @@
 ## 2026-11-04: Inter font
 - Inter 4.1 (`Inter-Regular.ttf`) came from the official release at https://github.com/rsms/inter/releases/tag/v4.1 and is bundled under the SIL Open Font License.
 - The search box is now custom: it supports typing and backspace, but not a movable cursor, text selection or pasting.
+
+## 2026-11-04: right-click settings, new modules, installer 0.2.0
+- `gradle runClientGameTest`: passed with real input for right click on a module row, Esc back to the menu and a module toggle key. Screenshots were reviewed by eye for the settings screens, Clear Weather in rain, Custom Time, Custom Crosshair, accent color, HUD size 125%, Held Item, Potion Effects, Server Info, Day Counter, Light Level, Memory Usage and Chat Timestamps. Toggle Sprint and Toggle Sneak change and restore Minecraft's own options.
+- The first run failed its hotkey check because keys were only polled once per tick, which could also miss very short presses. Hotkeys now use the key press event.
+- No Fog, No Vignette, No Hurt Camera and Dynamic FPS load without mixin errors, but their effects were not compared. Copy Coordinates, choosing a key in the menu, most individual settings, and HUD sizes other than 100% and 125% were not exercised.
+- `npm.cmd test`: 11 tests passed. `NicoClient-Setup-0.2.0.exe` was installed silently on this PC: the app window opened, the bundled mod matched the build, and the desktop and Start menu shortcuts existed. Uninstalling removed the app and desktop shortcut and left `%APPDATA%\NicoClient\mods` and `launcher_profiles.json` unchanged.
+- Not tested: the installer on another PC or Windows user, PLAY from the installed app, and SmartScreen behavior.

@@ -42,7 +42,7 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.runOnClient(client -> {
                 for (ModuleManager.HudModule module : m.hudModules) {
                     String text = dev.nicoweyin.nicoclient.HudRenderer.text(module);
-                    check(text != null && !text.isBlank(), "text for " + module.id);
+                    check(text != null && (!text.isBlank() || !dev.nicoweyin.nicoclient.HudRenderer.hasContent(module)), "text for " + module.id);
                 }
             });
 
@@ -79,7 +79,7 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("nicoclient-4-night-fullbright");
 
             // Zoom through its real key.
-            context.runOnClient(client -> { m.zoom.enabled = true; m.zoomFactor = 8; m.save(); });
+            context.runOnClient(client -> { m.zoom.enabled = true; m.zoomFactor.set(8); m.zoomSmooth.set(0); m.save(); });
             context.getInput().holdKey(NicoClientMod.zoomKey);
             context.waitTicks(5);
             context.takeScreenshot("nicoclient-5-zoom");
@@ -116,7 +116,7 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.waitTicks(10);
             context.runOnClient(client -> check(client.screen == null, "Right Shift closes the menu"));
 
-            context.setScreen(ModuleSettingsScreen::new);
+            context.setScreen(() -> new ModuleSettingsScreen(m.client, null));
             context.waitTicks(15);
             context.takeScreenshot("nicoclient-6d-settings");
 
@@ -135,14 +135,86 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.waitTicks(2);
             context.runOnClient(client -> check(m.coords.x == coordsStart[0] + 100 && m.coords.y == coordsStart[1] + 30, "dragging moved Coordinates to " + m.coords.x + "," + m.coords.y));
             context.setScreen(() -> null);
+            context.runOnClient(client -> {
+                m.coords.resetPosition();
+                m.hudModules.forEach(module -> module.enabled = false);
+                m.save();
+            });
+
+            // A real right click on a row opens that module's own settings.
+            context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT_SHIFT);
+            context.waitTicks(15);
+            int[] keysSwitch = context.computeOnClient(client -> ((NicoScreen) client.screen).toggleCenter(m.keys));
+            check(keysSwitch != null, "Keystrokes row is visible");
+            moveTo(context, keysSwitch[0] - 60, keysSwitch[1]);
+            context.waitTick();
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+            context.waitTicks(25);
+            context.runOnClient(client -> check(client.screen instanceof ModuleSettingsScreen, "right click opens module settings"));
+            context.takeScreenshot("nicoclient-8-right-click-keystrokes");
+            context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE);
+            context.waitTicks(10);
+            context.runOnClient(client -> check(client.screen instanceof NicoScreen, "Esc returns to the menu"));
+            context.setScreen(() -> new ModuleSettingsScreen(m.crosshair, null));
+            context.waitTicks(15);
+            context.takeScreenshot("nicoclient-8b-crosshair-settings");
+            context.setScreen(() -> null);
+
+            // Hotkeys toggle a module during play, and saved values load back.
+            context.runOnClient(client -> { m.cps.enabled = false; m.cps.hotkey = GLFW.GLFW_KEY_J; });
+            context.getInput().pressKey(GLFW.GLFW_KEY_J);
+            context.waitTicks(3);
+            context.runOnClient(client -> { check(m.cps.enabled, "hotkey toggles the module"); m.cps.hotkey = -1; });
+
+            // New modules, each seen working in the world.
+            world.getServer().runCommand("weather rain");
+            context.runOnClient(client -> { m.fullbright.enabled = false; m.noWeather.enabled = false; m.customTime.enabled = false; m.save(); });
+            context.waitTicks(40);
+            context.takeScreenshot("nicoclient-9a-rain");
+            context.runOnClient(client -> { m.noWeather.enabled = true; });
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-9b-clear-weather");
+            context.runOnClient(client -> {
+                m.noWeather.enabled = false;
+                m.customTime.enabled = true; m.timeOfDay.set(6000);
+                m.crosshair.enabled = true; m.crosshairStyle.set(2); m.crosshairColor.set(3);
+                m.accent.set(3); m.hudScale.set(125);
+                m.hudModules.forEach(module -> module.enabled = true);
+                m.fps.enabled = true;
+                m.chatTime.enabled = true; m.chat24.set(1);
+                m.toggleSprint.enabled = true; m.toggleSneak.enabled = true; m.noFog.enabled = true;
+                m.noVignette.enabled = true; m.noHurtCam.enabled = true; m.dynamicFps.enabled = true;
+                m.save();
+            });
+            world.getServer().runCommand("weather clear");
+            world.getServer().runCommand("effect give @a minecraft:speed 60 1 true");
+            world.getServer().runCommand("item replace entity @a weapon.mainhand with minecraft:diamond_pickaxe");
+            world.getServer().runCommand("damage @a 1");
+            world.getServer().runCommand("say hello");
+            context.waitTicks(20);
+            context.takeScreenshot("nicoclient-9c-new-modules");
+            context.runOnClient(client -> {
+                check(client.options.toggleSprint().get() && client.options.toggleCrouch().get(), "toggle sprint and sneak apply");
+                check(client.gui.getChat() != null, "chat exists");
+                m.toggleSprint.enabled = false; m.toggleSneak.enabled = false; m.noFog.enabled = false;
+            });
+            context.waitTicks(2);
+            context.runOnClient(client -> check(!client.options.toggleSprint().get() && !client.options.toggleCrouch().get(), "toggle sprint and sneak restore"));
+            context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT_SHIFT);
+            context.waitTicks(15);
+            context.takeScreenshot("nicoclient-9d-menu-green");
+            context.setScreen(() -> null);
+            context.runOnClient(client -> { m.accent.set(0); m.hudScale.set(100); m.crosshair.enabled = false; m.customTime.enabled = false; m.chatTime.enabled = false; });
 
             // Settings must reach the disk and load back.
             context.runOnClient(client -> {
-                m.coords.x = 123; m.coords.y = 45; m.save();
+                m.coords.enabled = true; m.coords.x = 123; m.coords.y = 45; m.zoomFactor.set(2); m.save();
                 Path file = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
                 check(Files.isRegularFile(file), "configuration file written");
                 m.coords.x = 0; m.coords.y = 0; m.load();
-                check(m.coords.x == 123 && m.coords.y == 45 && m.coords.enabled, "configuration loads back");
+                m.zoomFactor.set(8);
+                m.load();
+                check(m.coords.x == 123 && m.coords.y == 45 && m.coords.enabled && m.zoomFactor.get() == 2, "configuration loads back");
                 m.modules.forEach(module -> module.enabled = false);
                 m.fps.enabled = true;
                 m.hudModules.forEach(ModuleManager.HudModule::resetPosition);

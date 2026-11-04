@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Locale;
 
 public final class NicoScreen extends AnimatedScreen {
-    private static final String[] CATEGORIES = {"All", "HUD", "Visuals", "Performance", "Favorites"};
-    private static final int SIDEBAR = 104, ROW = 30, ROW_GAP = 4, ITEM = 20, ITEM_GAP = 2, ITEMS_TOP = 42;
+    private static final String[] CATEGORIES = {"All", "HUD", "Visuals", "Utility", "Performance", "Favorites"};
+    private static final int SIDEBAR = 104, ROW = 30, ROW_GAP = 4, ITEM = 18, ITEM_GAP = 2, ITEMS_TOP = 36, FAVORITES = 5;
     private static final int MAX_QUERY = 40;
     private String query = "";
     private int category;
@@ -30,7 +30,7 @@ public final class NicoScreen extends AnimatedScreen {
     public List<ModuleManager.Module> visibleModules() {
         String needle = query.toLowerCase(Locale.ROOT);
         return NicoClientMod.MODULES.modules.stream().filter(m ->
-            (category == 0 || (category == 4 ? m.favorite : m.category.equals(CATEGORIES[category])))
+            (category == 0 || (category == FAVORITES ? m.favorite : m.category.equals(CATEGORIES[category])))
             && (m.name + " " + m.category).toLowerCase(Locale.ROOT).contains(needle)).toList();
     }
 
@@ -53,17 +53,17 @@ public final class NicoScreen extends AnimatedScreen {
         Ui.rounded(g, left, top, panelW, panelH, 12, Ui.alpha(Ui.PANEL, alpha));
         Ui.rounded(g, left + 4, top + 4, SIDEBAR - 4, panelH - 8, 9, Ui.alpha(Ui.SIDEBAR, alpha));
 
-        Ui.rounded(g, left + 14, top + 15, 6, 6, 3, Ui.alpha(Ui.ACCENT_LIGHT, alpha));
+        Ui.rounded(g, left + 14, top + 15, 6, 6, 3, Ui.alpha(Ui.accentLight(), alpha));
         Ui.text(g, "NicoClient", left + 25, top + 14, Ui.alpha(Ui.TEXT, alpha));
 
         float indicator = animate("category", ITEMS_TOP + category * (ITEM + ITEM_GAP), 20);
-        Ui.rounded(g, left + 9, top + indicator, SIDEBAR - 14, ITEM, 6, Ui.alpha(Ui.ACCENT, alpha));
+        Ui.rounded(g, left + 9, top + indicator, SIDEBAR - 14, ITEM, 6, Ui.alpha(Ui.accent(), alpha));
         for (int i = 0; i < CATEGORIES.length; i++) {
             float y = top + ITEMS_TOP + i * (ITEM + ITEM_GAP);
             boolean hovered = !isClosing() && Ui.inside(mouseX, mouseY, left + 9, y, SIDEBAR - 14, ITEM);
             float hover = animate("sidebar:" + i, hovered ? 1 : 0, 16);
             float selected = animate("selected:" + i, i == category ? 1 : 0, 16);
-            Ui.text(g, CATEGORIES[i], left + 18 + hover * 2, y + 6, Ui.alpha(Ui.mix(Ui.mix(Ui.MUTED, Ui.TEXT, hover), Ui.TEXT, selected), alpha));
+            Ui.text(g, CATEGORIES[i], left + 18 + hover * 2, y + 5, Ui.alpha(Ui.mix(Ui.mix(Ui.MUTED, Ui.TEXT, hover), Ui.TEXT, selected), alpha));
         }
         button(g, "Edit HUD", left + 9, editHudY(), SIDEBAR - 14, 20, mouseX, mouseY);
         button(g, "Settings", left + 9, settingsY(), SIDEBAR - 14, 20, mouseX, mouseY);
@@ -72,10 +72,12 @@ public final class NicoScreen extends AnimatedScreen {
         // Typing always goes to the search box; the vanilla box only works with the vanilla font.
         Ui.rounded(g, x, top + 8, w, 22, 7, Ui.alpha(Ui.SURFACE, alpha));
         if (query.isEmpty()) Ui.text(g, "Search modules", x + 11, top + 15, Ui.alpha(Ui.MUTED, alpha));
+        String hint = "Right click to configure";
+        if (w > Ui.width(hint) + 110) Ui.text(g, hint, x + w - Ui.width(hint) - 11, top + 15, Ui.alpha(Ui.OFF, alpha) | 0x00303030);
         else Ui.text(g, Ui.fit(query, w - 24), x + 11, top + 15, Ui.alpha(Ui.TEXT, alpha));
         if (System.currentTimeMillis() % 1000 < 550) {
             float caret = query.isEmpty() ? 0 : Ui.width(Ui.fit(query, w - 24)) + 1;
-            Ui.rounded(g, x + 10 + caret, top + 14, 1, 10, 0, Ui.alpha(Ui.ACCENT_LIGHT, alpha));
+            Ui.rounded(g, x + 10 + caret, top + 14, 1, 10, 0, Ui.alpha(Ui.accentLight(), alpha));
         }
 
         List<ModuleManager.Module> modules = visibleModules();
@@ -96,12 +98,12 @@ public final class NicoScreen extends AnimatedScreen {
             Ui.text(g, Ui.fit(module.name, w - 80), x + 11, y + 6, Ui.alpha(Ui.TEXT, alpha));
             Ui.text(g, module.category, x + 11, y + 17, Ui.alpha(Ui.MUTED, alpha));
             boolean overStar = inList && Ui.inside(mouseX, mouseY, starX(x, w), y, 16, ROW);
-            int star = module.favorite ? Ui.ACCENT_LIGHT : overStar ? Ui.TEXT : Ui.OFF;
+            int star = module.favorite ? Ui.accentLight() : overStar ? Ui.TEXT : Ui.OFF;
             Ui.text(g, "★", starX(x, w) + 3, y + 11, Ui.alpha(star, alpha));
             Ui.toggle(g, x + w - 32, y + 9, on, alpha);
         }
         if (modules.isEmpty()) {
-            String empty = category == 4 && query.isEmpty() ? "Star a module to find it here" : "No modules found";
+            String empty = category == FAVORITES && query.isEmpty() ? "Star a module to find it here" : "No modules found";
             Ui.text(g, empty, x + (w - Ui.width(empty)) / 2f, listTop + listH / 2f - 4, Ui.alpha(Ui.MUTED, alpha));
         }
         g.disableScissor();
@@ -118,6 +120,7 @@ public final class NicoScreen extends AnimatedScreen {
     @Override public boolean mouseClicked(MouseButtonEvent e, boolean doubled) {
         if (isClosing()) return true;
         if (super.mouseClicked(e, doubled)) return true;
+        if (e.button() == 1) return rightClick(e);
         if (e.button() != 0) return false;
         int left = left(), top = top();
         for (int i = 0; i < CATEGORIES.length; i++) {
@@ -128,7 +131,7 @@ public final class NicoScreen extends AnimatedScreen {
             }
         }
         if (Ui.inside(e.x(), e.y(), left + 9, editHudY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new HudEditor()); return true; }
-        if (Ui.inside(e.x(), e.y(), left + 9, settingsY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new ModuleSettingsScreen()); return true; }
+        if (Ui.inside(e.x(), e.y(), left + 9, settingsY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new ModuleSettingsScreen(NicoClientMod.MODULES.client, this)); return true; }
         int x = contentX(), w = contentWidth();
         if (!Ui.inside(e.x(), e.y(), x, listTop(), w, listHeight())) return false;
         List<ModuleManager.Module> modules = visibleModules();
@@ -141,6 +144,20 @@ public final class NicoScreen extends AnimatedScreen {
             Ui.click();
             NicoClientMod.MODULES.save();
             return true;
+        }
+        return false;
+    }
+
+    private boolean rightClick(MouseButtonEvent e) {
+        int x = contentX(), w = contentWidth();
+        if (!Ui.inside(e.x(), e.y(), x, listTop(), w, listHeight())) return false;
+        List<ModuleManager.Module> modules = visibleModules();
+        for (int i = 0; i < modules.size(); i++) {
+            if (Ui.inside(e.x(), e.y(), x, rowY(i), w, ROW)) {
+                Ui.click();
+                closeTo(new ModuleSettingsScreen(modules.get(i), this));
+                return true;
+            }
         }
         return false;
     }

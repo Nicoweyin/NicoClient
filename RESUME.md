@@ -7,4 +7,4 @@
 5. Before distributing, complete code-signing setup and test GitHub updates against an approved published release. See `RELEASE.md`; never publish without asking the owner. Remaining ideas: fuller dependency and conflict handling, Fabric-side cosmetic rendering, profiles and a loading splash.
 6. Local `main` has origin `https://github.com/Nicoweyin/NicoClient.git`. Inspect the remote history before a push; do not push or publish without approval. Artifacts in `release/` and `release-corrected/` predate this change and are stale.
 
-Do not create a desktop shortcut until the owner asks for one.
+To share NicoClient with friends, run `npm.cmd run package:win` after `gradle build` and send `release/NicoClient-Setup-<version>.exe`. The build is unsigned, so Windows SmartScreen warns on other PCs. Automatic updates only work once a release is published on GitHub, which needs the owner's approval.

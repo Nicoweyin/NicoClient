@@ -16,36 +16,36 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 9. [x] Direction indicator (client test)
 10. [x] Speed display (client test while standing still only)
 11. [x] Biome display (client test)
-12. [ ] Potion effects display
-13. [ ] Held item display
-14. [ ] Durability display
+12. [x] Potion effects display (client test)
+13. [x] Held item display (client test)
+14. [x] Durability display, as part of Held Item and Armor HUD (client test)
 15. [x] Session timer (client test)
 
 ## Visuals (12)
 16. [x] Zoom (client test)
 17. [x] Low fire (client test, compared while burning)
-18. [ ] No fog
+18. [x] No fog (loads in client test; effect not compared)
 19. [x] Reduced particles (ordinary particles use Minecraft's minimal setting; loads in client test, effect not compared)
-20. [ ] Custom crosshair
+20. [x] Custom crosshair with style, size, gap and color (client test)
 21. [x] Fullbright (configurable ambient-light minimum; client test, compared at night)
-22. [ ] Weather display controls
-23. [ ] Time display controls
+22. [x] Clear Weather, client-side only (client test, compared in rain)
+23. [x] Custom Time, client-side only (client test)
 24. [ ] Custom hotbar styling
 25. [ ] Custom GUI scale
-26. [ ] Damage tint controls
-27. [ ] Screen vignette controls
+26. [x] No Hurt Camera (loads in client test; effect not compared)
+27. [x] No Vignette (loads in client test; effect not compared)
 
 ## Utilities (13)
 28. [ ] Auto sprint
-29. [ ] Toggle sneak
+29. [x] Toggle sneak, through Minecraft's own option (option change checked in client test)
 30. [ ] Tool protection
-31. [ ] Toggle sprint
+31. [x] Toggle sprint, through Minecraft's own option (option change checked in client test)
 32. [ ] Screenshot shortcut
 33. [ ] Screenshot notification
-34. [ ] Chat timestamps
+34. [x] Chat timestamps (client test)
 35. [ ] Chat history extension
 36. [ ] Waypoint management
-37. [ ] Coordinate copy shortcut
+37. [x] Copy Coordinates (key action not exercised)
 38. [ ] Inventory search
 39. [ ] Item pickup notifications
 40. [ ] Sound volume shortcuts
@@ -55,17 +55,17 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 42. [x] Searchable, smoothly scrolling module list (typing checked in client test; scrolling not exercised)
 43. [x] Module categories and filtering (displays in client test; clicking a category not exercised)
 44. [x] Animated module switches (real mouse click checked in client test)
-45. [ ] Module-specific settings (zoom, Fullbright and trajectory marker settings compiled; broader settings pending)
+45. [x] Right click any module to configure it (real right click checked in client test; not every setting was exercised)
 46. [x] Persistent configuration (save and reload checked in client test)
-47. [ ] Keybind customization
-48. [ ] Theme accent selection
-49. [ ] HUD scale settings
+47. [x] Per-module toggle keys (key press checked in client test; choosing a key in the menu not exercised)
+48. [x] Theme accent selection (client test)
+49. [x] HUD scale settings (client test at 125%)
 50. [ ] Configuration profiles
 
 ## Additional requested modules (planned)
 
 - Visuals: Trajectories for bow, snowballs, eggs, ender pearls and splash potions with optional impact marker (path draws in client test for a snowball; accuracy not compared with real throws); Hit Color, Block Outline, Clear Water and FOV Changer remain planned.
-- HUD: Server Info.
-- Performance: Smart Animations, Entity Render Distance, Dynamic FPS, Performance Presets.
+- HUD: Server Info (client test in single-player), Day Counter, Light Level and Memory Usage (client test).
+- Performance: Dynamic FPS is added (loads in client test; lowering the frame rate while unfocused was not measured). Smart Animations, Entity Render Distance and Performance Presets remain planned.
 - Utility: Inventory Profiles, Screenshot Manager, Auto Reconnect.
 - Cosmetics: actual Fabric-side Capes, Wings, Particle Cosmetics, HUD Themes and GUI Themes. Launcher cosmetic controls are preferences, not in-game rendering.

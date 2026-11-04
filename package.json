@@ -1,7 +1,7 @@
 {
   "name": "nicoclient",
   "productName": "NicoClient",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "NicoClient by Nicoweyin — an independent Minecraft launcher",
   "main": "dist/main.js",
@@ -38,7 +38,7 @@
       "artifactName": "NicoClient-Setup-${version}.${ext}"
     },
     "nsis": {
-      "createDesktopShortcut": false,
+      "createDesktopShortcut": true,
       "shortcutName": "NicoClient",
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
