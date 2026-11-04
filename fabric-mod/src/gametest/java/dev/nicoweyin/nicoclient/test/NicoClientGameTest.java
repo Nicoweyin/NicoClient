@@ -2,6 +2,7 @@ package dev.nicoweyin.nicoclient.test;
 
 import dev.nicoweyin.nicoclient.HudEditor;
 import dev.nicoweyin.nicoclient.ModuleManager;
+import dev.nicoweyin.nicoclient.ModuleSettingsScreen;
 import dev.nicoweyin.nicoclient.NicoClientMod;
 import dev.nicoweyin.nicoclient.NicoScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -84,14 +85,55 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("nicoclient-5-zoom");
             context.getInput().releaseKey(NicoClientMod.zoomKey);
 
-            // The menu must open with its real key, then the HUD editor.
+            // The menu must open with its real key and fully finish its animation.
             context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT_SHIFT);
-            context.waitTicks(5);
-            context.runOnClient(client -> check(client.screen instanceof NicoScreen, "Right Shift opens the menu"));
+            context.waitTicks(15);
+            context.runOnClient(client -> check(client.screen instanceof NicoScreen screen && screen.isFullyOpen(), "Right Shift opens the menu"));
             context.takeScreenshot("nicoclient-6-menu");
+
+            // A real mouse click on a switch flips the module, and the mouse hovers a row.
+            int[] cpsSwitch = context.computeOnClient(client -> ((NicoScreen) client.screen).toggleCenter(m.cps));
+            check(cpsSwitch != null, "CPS switch is visible");
+            moveTo(context, cpsSwitch[0], cpsSwitch[1]);
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-6b-menu-hover");
+            boolean before = context.computeOnClient(client -> m.cps.enabled);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(10);
+            context.runOnClient(client -> check(m.cps.enabled != before, "clicking the switch toggles the module"));
+
+            // Typing filters the list.
+            context.getInput().typeChars("zoom");
+            context.waitTicks(5);
+            context.runOnClient(client -> check(((NicoScreen) client.screen).visibleModules().equals(java.util.List.of(m.zoom)), "search finds only Zoom"));
+            context.takeScreenshot("nicoclient-6c-menu-search");
+            context.getInput().pressKey(GLFW.GLFW_KEY_BACKSPACE);
+            context.waitTicks(2);
+            context.runOnClient(client -> check(((NicoScreen) client.screen).visibleModules().contains(m.zoom), "backspace edits the search"));
+
+            // The same key closes the menu again, through the closing animation.
+            context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT_SHIFT);
+            context.waitTicks(10);
+            context.runOnClient(client -> check(client.screen == null, "Right Shift closes the menu"));
+
+            context.setScreen(ModuleSettingsScreen::new);
+            context.waitTicks(15);
+            context.takeScreenshot("nicoclient-6d-settings");
+
+            // Dragging with the real mouse moves a HUD module.
             context.setScreen(HudEditor::new);
             context.waitTicks(5);
             context.takeScreenshot("nicoclient-7-hud-editor");
+            int[] coordsStart = context.computeOnClient(client -> new int[] {m.coords.x, m.coords.y});
+            moveTo(context, coordsStart[0] + 6, coordsStart[1] + 6);
+            context.waitTick();
+            context.getInput().holdMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTick();
+            moveTo(context, coordsStart[0] + 106, coordsStart[1] + 36);
+            context.waitTicks(3);
+            context.getInput().releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(2);
+            context.runOnClient(client -> check(m.coords.x == coordsStart[0] + 100 && m.coords.y == coordsStart[1] + 30, "dragging moved Coordinates to " + m.coords.x + "," + m.coords.y));
             context.setScreen(() -> null);
 
             // Settings must reach the disk and load back.
@@ -107,6 +149,12 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                 m.save();
             });
         }
+    }
+
+    /** The test cursor works in window pixels; the GUI works in scaled units. */
+    private static void moveTo(ClientGameTestContext context, int guiX, int guiY) {
+        double scale = context.computeOnClient(client -> (double) client.getWindow().getGuiScale());
+        context.getInput().setCursorPos((guiX + 0.5) * scale, (guiY + 0.5) * scale);
     }
 
     private static void check(boolean condition, String what) {

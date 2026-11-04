@@ -2,7 +2,7 @@
 
 PLAY sets up a NicoClient profile in the official Minecraft Launcher and opens it; the official launcher handles sign-in and starting the game. See `BUILD_STATUS.md` and `TEST_RESULTS.md`.
 
-The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fullbright, Reduced Particles, Trajectories, a Right Shift module screen and a draggable HUD editor. "Client test" means it ran in a real Minecraft 1.21.11 client through `gradle runClientGameTest` in a temporary single-player world, with screenshots reviewed by eye. That is not yet the same as normal play through the launcher: multiplayer, real mouse dragging and long sessions remain untested. Zoom uses a configurable 2x/4x/8x factor and a rebindable hold key (default C). Fullbright uses configurable ambient-light levels; Trajectories has an optional impact marker. FPS retains its initially unbound separate toggle. Module state, favorites, settings and HUD positions are stored in `config/nicoclient.properties`. Other in-game items below remain planned. The launcher cosmetic controls do not render in Fabric. See `fabric-mod/LOCAL_TESTING.md` for testing and prediction limitations.
+The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fullbright, Reduced Particles, Trajectories, a Right Shift module screen and a draggable HUD editor. "Client test" means it ran in a real Minecraft 1.21.11 client through `gradle runClientGameTest` in a temporary single-player world, with screenshots reviewed by eye. The owner has also played through the official launcher and reported that it works. Multiplayer and long sessions have not been tested systematically. Zoom uses a configurable 2x/4x/8x factor and a rebindable hold key (default C). Fullbright uses configurable ambient-light levels; Trajectories has an optional impact marker. FPS retains its initially unbound separate toggle. Module state, favorites, settings and HUD positions are stored in `config/nicoclient.properties`. Other in-game items below remain planned. The launcher cosmetic controls do not render in Fabric. See `fabric-mod/LOCAL_TESTING.md` for testing and prediction limitations.
 
 ## HUD (15)
 1. [x] FPS counter (client test; on by default)
@@ -11,7 +11,7 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 4. [x] Coordinates (client test)
 5. [x] Armor HUD (client test)
 6. [x] Ping HUD (client test in single-player only)
-7. [x] HUD editor for all HUD modules, with layout reset (opens in client test; mouse dragging not exercised)
+7. [x] HUD editor for all HUD modules, with layout reset (mouse dragging checked in client test)
 8. [x] Clock (client test)
 9. [x] Direction indicator (client test)
 10. [x] Speed display (client test while standing still only)
@@ -51,10 +51,10 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 40. [ ] Sound volume shortcuts
 
 ## Client Settings (10)
-41. [x] Right Shift ClickGUI (opens with its real key in client test)
-42. [x] Searchable module list (displays in client test; typing not exercised)
-43. [x] Module categories and filtering (displays in client test; filtering not exercised)
-44. [x] Module toggles (state changes in client test; button clicks not exercised)
+41. [x] Rounded, animated module menu with a sidebar and the Inter font (opens and closes with Right Shift in client test)
+42. [x] Searchable, smoothly scrolling module list (typing checked in client test; scrolling not exercised)
+43. [x] Module categories and filtering (displays in client test; clicking a category not exercised)
+44. [x] Animated module switches (real mouse click checked in client test)
 45. [ ] Module-specific settings (zoom, Fullbright and trajectory marker settings compiled; broader settings pending)
 46. [x] Persistent configuration (save and reload checked in client test)
 47. [ ] Keybind customization

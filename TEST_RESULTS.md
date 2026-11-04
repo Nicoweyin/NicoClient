@@ -36,3 +36,14 @@
 - NicoClient's own sign-in and game launch were removed, along with their tests; earlier results above for those parts no longer apply.
 - `npm.cmd test`, the Electron smoke test and `gradle build` were rerun after the change. The tests use a temporary `.minecraft` folder and mocked services; the smoke test mocks opening the official launcher.
 - Not tested: starting the game from the official launcher with the NicoClient profile.
+
+## 2026-11-04: new in-game look
+- The owner reported that playing through the official launcher works; this was not observed directly.
+- `gradle runClientGameTest`: passed with the new menu. It now also checks with real input that Right Shift opens and closes the menu, a mouse click flips a switch, typing filters the list, and dragging moves a HUD module. Screenshots of the menu, search, settings, HUD and HUD editor were reviewed by eye.
+- FPS in the test window stayed around the same level as before with all HUD modules on (about 70), in one short run; this is not a real benchmark.
+- One of four runs failed before the first screenshot with "Network synchronizer in invalid state" from Fabric's game test tool, with no NicoClient code in the stack trace; the other three passed, including two reruns of the same code. The cause was not determined.
+- Not tested: smooth scrolling and clicks on categories, favorites and settings controls, other GUI scales, and animations by eye (screenshots show single frames).
+
+## 2026-11-04: Inter font
+- Inter 4.1 (`Inter-Regular.ttf`) came from the official release at https://github.com/rsms/inter/releases/tag/v4.1 and is bundled under the SIL Open Font License.
+- The search box is now custom: it supports typing and backspace, but not a movable cursor, text selection or pasting.

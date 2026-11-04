@@ -1,57 +1,172 @@
 package dev.nicoweyin.nicoclient;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import java.util.Locale;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import org.lwjgl.glfw.GLFW;
 import java.util.List;
+import java.util.Locale;
 
-public final class NicoScreen extends Screen {
-    private EditBox search;
+public final class NicoScreen extends AnimatedScreen {
+    private static final String[] CATEGORIES = {"All", "HUD", "Visuals", "Performance", "Favorites"};
+    private static final int SIDEBAR = 104, ROW = 30, ROW_GAP = 4, ITEM = 20, ITEM_GAP = 2, ITEMS_TOP = 42;
+    private static final int MAX_QUERY = 40;
     private String query = "";
-    private boolean favorites;
-    private int categoryIndex, page;
-    private static final int HEIGHT = 234, ROWS = 5;
-    private static final String[] CATEGORIES = {"All", "HUD", "Visuals", "Performance"};
-    public NicoScreen() { super(Component.literal("NicoClient")); }
-    @Override protected void init() {
-        int left = (width - 260) / 2, top = (height - HEIGHT) / 2;
-        search = addRenderableWidget(new EditBox(font, left + 12, top + 34, 154, 20, Component.literal("Search modules")));
-        search.setHint(Component.literal("Search modules"));
-        search.setValue(query);
-        search.setResponder(value -> { query = value; page = 0; rebuildWidgets(); setFocused(search); search.moveCursorToEnd(false); });
-        addRenderableWidget(Button.builder(Component.literal(favorites ? "Favorites *" : "Favorites"), b -> { favorites = !favorites; page = 0; rebuildWidgets(); }).bounds(left + 170, top + 34, 78, 20).build());
-        addRenderableWidget(Button.builder(Component.literal(CATEGORIES[categoryIndex]), b -> { categoryIndex = (categoryIndex + 1) % CATEGORIES.length; page = 0; rebuildWidgets(); }).bounds(left + 12, top + 58, 100, 20).build());
-        List<ModuleManager.Module> visible = NicoClientMod.MODULES.modules.stream().filter(m ->
-            (!favorites || m.favorite) && (categoryIndex == 0 || m.category.equals(CATEGORIES[categoryIndex]))
-            && (m.name + " " + m.category).toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT))).toList();
-        int pages = Math.max(1, (visible.size() + ROWS - 1) / ROWS);
-        page = Math.min(page, pages - 1);
-        addRenderableWidget(Button.builder(Component.literal("<"), b -> { page = (page + pages - 1) % pages; rebuildWidgets(); }).bounds(left + 120, top + 58, 32, 20).build());
-        addRenderableWidget(Button.builder(Component.literal((page + 1) + "/" + pages + " >"), b -> { page = (page + 1) % pages; rebuildWidgets(); }).bounds(left + 156, top + 58, 92, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Edit HUD"), b -> minecraft.setScreen(new HudEditor())).bounds(left + 12, top + 206, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Module settings"), b -> minecraft.setScreen(new ModuleSettingsScreen())).bounds(left + 120, top + 206, 128, 20).build());
-        int y = top + 82;
-        for (ModuleManager.Module module : visible.subList(page * ROWS, Math.min(visible.size(), page * ROWS + ROWS))) {
-            int row = y;
-            addRenderableWidget(Button.builder(Component.literal(module.category + " | " + module.name + (module.enabled ? "  ON" : "  OFF")), b -> {
-                module.enabled = !module.enabled; NicoClientMod.MODULES.save(); rebuildWidgets();
-            }).bounds(left + 12, row, 194, 20).build());
-            addRenderableWidget(Button.builder(Component.literal(module.favorite ? "*" : "+"), b -> {
-                module.favorite = !module.favorite; NicoClientMod.MODULES.save(); rebuildWidgets();
-            }).bounds(left + 210, row, 38, 20).build());
-            y += 24;
+    private int category;
+    private float scroll, scrollTarget;
+
+    public NicoScreen() { super("NicoClient"); }
+
+    private int panelWidth() { return Math.min(width - 16, 430); }
+    private int panelHeight() { return Math.min(height - 16, 280); }
+    private int left() { return (width - panelWidth()) / 2; }
+    private int top() { return (height - panelHeight()) / 2; }
+    private int contentX() { return left() + SIDEBAR + 8; }
+    private int contentWidth() { return panelWidth() - SIDEBAR - 16; }
+    private int listTop() { return top() + 36; }
+    private int listHeight() { return panelHeight() - 44; }
+
+    public List<ModuleManager.Module> visibleModules() {
+        String needle = query.toLowerCase(Locale.ROOT);
+        return NicoClientMod.MODULES.modules.stream().filter(m ->
+            (category == 0 || (category == 4 ? m.favorite : m.category.equals(CATEGORIES[category])))
+            && (m.name + " " + m.category).toLowerCase(Locale.ROOT).contains(needle)).toList();
+    }
+
+    private float maxScroll(int count) { return Math.max(0, count * (ROW + ROW_GAP) - ROW_GAP - listHeight()); }
+    private float rowY(int index) { return listTop() - scroll + index * (ROW + ROW_GAP); }
+    private float editHudY() { return top() + panelHeight() - 54; }
+    private float settingsY() { return top() + panelHeight() - 30; }
+
+    /** Center of a module's switch in GUI coordinates, or null if it is scrolled out of view. */
+    public int[] toggleCenter(ModuleManager.Module module) {
+        int index = visibleModules().indexOf(module);
+        if (index < 0) return null;
+        float y = rowY(index);
+        if (y < listTop() || y + ROW > listTop() + listHeight()) return null;
+        return new int[] {contentX() + contentWidth() - 32 + 12, Math.round(y) + ROW / 2};
+    }
+
+    @Override protected void draw(GuiGraphics g, int mouseX, int mouseY) {
+        int left = left(), top = top(), panelW = panelWidth(), panelH = panelHeight();
+        Ui.rounded(g, left, top, panelW, panelH, 12, Ui.alpha(Ui.PANEL, alpha));
+        Ui.rounded(g, left + 4, top + 4, SIDEBAR - 4, panelH - 8, 9, Ui.alpha(Ui.SIDEBAR, alpha));
+
+        Ui.rounded(g, left + 14, top + 15, 6, 6, 3, Ui.alpha(Ui.ACCENT_LIGHT, alpha));
+        Ui.text(g, "NicoClient", left + 25, top + 14, Ui.alpha(Ui.TEXT, alpha));
+
+        float indicator = animate("category", ITEMS_TOP + category * (ITEM + ITEM_GAP), 20);
+        Ui.rounded(g, left + 9, top + indicator, SIDEBAR - 14, ITEM, 6, Ui.alpha(Ui.ACCENT, alpha));
+        for (int i = 0; i < CATEGORIES.length; i++) {
+            float y = top + ITEMS_TOP + i * (ITEM + ITEM_GAP);
+            boolean hovered = !isClosing() && Ui.inside(mouseX, mouseY, left + 9, y, SIDEBAR - 14, ITEM);
+            float hover = animate("sidebar:" + i, hovered ? 1 : 0, 16);
+            float selected = animate("selected:" + i, i == category ? 1 : 0, 16);
+            Ui.text(g, CATEGORIES[i], left + 18 + hover * 2, y + 6, Ui.alpha(Ui.mix(Ui.mix(Ui.MUTED, Ui.TEXT, hover), Ui.TEXT, selected), alpha));
+        }
+        button(g, "Edit HUD", left + 9, editHudY(), SIDEBAR - 14, 20, mouseX, mouseY);
+        button(g, "Settings", left + 9, settingsY(), SIDEBAR - 14, 20, mouseX, mouseY);
+
+        int x = contentX(), w = contentWidth();
+        // Typing always goes to the search box; the vanilla box only works with the vanilla font.
+        Ui.rounded(g, x, top + 8, w, 22, 7, Ui.alpha(Ui.SURFACE, alpha));
+        if (query.isEmpty()) Ui.text(g, "Search modules", x + 11, top + 15, Ui.alpha(Ui.MUTED, alpha));
+        else Ui.text(g, Ui.fit(query, w - 24), x + 11, top + 15, Ui.alpha(Ui.TEXT, alpha));
+        if (System.currentTimeMillis() % 1000 < 550) {
+            float caret = query.isEmpty() ? 0 : Ui.width(Ui.fit(query, w - 24)) + 1;
+            Ui.rounded(g, x + 10 + caret, top + 14, 1, 10, 0, Ui.alpha(Ui.ACCENT_LIGHT, alpha));
+        }
+
+        List<ModuleManager.Module> modules = visibleModules();
+        float max = maxScroll(modules.size());
+        scrollTarget = Math.max(0, Math.min(max, scrollTarget));
+        scroll = Ui.approach(scroll, scrollTarget, seconds, 18);
+
+        int listTop = listTop(), listH = listHeight();
+        g.enableScissor(x, listTop, x + w, listTop + listH);
+        boolean inList = !isClosing() && Ui.inside(mouseX, mouseY, x, listTop, w, listH);
+        for (int i = 0; i < modules.size(); i++) {
+            ModuleManager.Module module = modules.get(i);
+            float y = rowY(i);
+            float on = animate(module, module.enabled ? 1 : 0, 16);
+            if (y + ROW < listTop || y > listTop + listH) continue;
+            float hover = animate("row:" + module.id, inList && Ui.inside(mouseX, mouseY, x, y, w, ROW) ? 1 : 0, 16);
+            Ui.rounded(g, x, y, w, ROW, 8, Ui.alpha(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, hover), alpha));
+            Ui.text(g, Ui.fit(module.name, w - 80), x + 11, y + 6, Ui.alpha(Ui.TEXT, alpha));
+            Ui.text(g, module.category, x + 11, y + 17, Ui.alpha(Ui.MUTED, alpha));
+            boolean overStar = inList && Ui.inside(mouseX, mouseY, starX(x, w), y, 16, ROW);
+            int star = module.favorite ? Ui.ACCENT_LIGHT : overStar ? Ui.TEXT : Ui.OFF;
+            Ui.text(g, "★", starX(x, w) + 3, y + 11, Ui.alpha(star, alpha));
+            Ui.toggle(g, x + w - 32, y + 9, on, alpha);
+        }
+        if (modules.isEmpty()) {
+            String empty = category == 4 && query.isEmpty() ? "Star a module to find it here" : "No modules found";
+            Ui.text(g, empty, x + (w - Ui.width(empty)) / 2f, listTop + listH / 2f - 4, Ui.alpha(Ui.MUTED, alpha));
+        }
+        g.disableScissor();
+        if (max > 0) {
+            float contentHeight = max + listH;
+            float barHeight = Math.max(16, listH * listH / contentHeight);
+            float barY = listTop + (listH - barHeight) * (scroll / max);
+            Ui.rounded(g, left + panelW - 5, barY, 2, barHeight, 1, Ui.alpha(Ui.HAIRLINE, alpha));
         }
     }
-    @Override public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-        int left = (width - 260) / 2, top = (height - HEIGHT) / 2;
-        g.fill(0, 0, width, height, 0x99070817);
-        g.fill(left, top, left + 260, top + HEIGHT, 0xF0161630);
-        g.fill(left, top, left + 260, top + 2, 0xFF82DCE9);
-        g.drawString(font, "NICOCLIENT", left + 12, top + 11, 0xFFBAA2F1, false);
-        super.render(g, mouseX, mouseY, delta);
+
+    private static int starX(int x, int w) { return x + w - 52; }
+
+    @Override public boolean mouseClicked(MouseButtonEvent e, boolean doubled) {
+        if (isClosing()) return true;
+        if (super.mouseClicked(e, doubled)) return true;
+        if (e.button() != 0) return false;
+        int left = left(), top = top();
+        for (int i = 0; i < CATEGORIES.length; i++) {
+            if (Ui.inside(e.x(), e.y(), left + 9, top + ITEMS_TOP + i * (ITEM + ITEM_GAP), SIDEBAR - 14, ITEM)) {
+                if (category != i) Ui.click();
+                category = i; scrollTarget = 0;
+                return true;
+            }
+        }
+        if (Ui.inside(e.x(), e.y(), left + 9, editHudY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new HudEditor()); return true; }
+        if (Ui.inside(e.x(), e.y(), left + 9, settingsY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new ModuleSettingsScreen()); return true; }
+        int x = contentX(), w = contentWidth();
+        if (!Ui.inside(e.x(), e.y(), x, listTop(), w, listHeight())) return false;
+        List<ModuleManager.Module> modules = visibleModules();
+        for (int i = 0; i < modules.size(); i++) {
+            float y = rowY(i);
+            if (!Ui.inside(e.x(), e.y(), x, y, w, ROW)) continue;
+            ModuleManager.Module module = modules.get(i);
+            if (Ui.inside(e.x(), e.y(), starX(x, w), y, 16, ROW)) module.favorite = !module.favorite;
+            else module.enabled = !module.enabled;
+            Ui.click();
+            NicoClientMod.MODULES.save();
+            return true;
+        }
+        return false;
     }
-    @Override public boolean isPauseScreen() { return false; }
+
+    @Override public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
+        scrollTarget -= (float) vertical * 28;
+        return true;
+    }
+
+    @Override public boolean keyPressed(KeyEvent e) {
+        if (NicoClientMod.menuKey.matches(e)) { onClose(); return true; }
+        if (e.key() == GLFW.GLFW_KEY_BACKSPACE && !query.isEmpty()) {
+            setQuery(query.substring(0, query.offsetByCodePoints(query.length(), -1)));
+            return true;
+        }
+        return super.keyPressed(e);
+    }
+
+    @Override public boolean charTyped(CharacterEvent e) {
+        int codepoint = e.codepoint();
+        if (Character.isISOControl(codepoint) || query.length() >= MAX_QUERY) return false;
+        setQuery(query + Character.toString(codepoint));
+        return true;
+    }
+
+    private void setQuery(String value) { query = value; scrollTarget = 0; }
+
+    @Override public void onClose() { closeTo(null); }
 }

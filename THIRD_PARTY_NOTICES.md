@@ -34,6 +34,10 @@ Direct development dependencies include electron-builder 26.18.0 (MIT), TypeScri
 
 The separate Fabric mod build uses Fabric Loader, Fabric API, Fabric Loom and Gradle, each under its own terms; consult their distributed license and notice files. It uses official Minecraft mappings for development, subject to Mojang's mapping terms, and does not redistribute the complete unmodified mappings. Minecraft itself and Fabric API are separate dependencies, not bundled NicoClient code.
 
+## Fonts
+
+The Fabric mod bundles the Inter typeface (`Inter-Regular.ttf`, version 4.1), Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter), licensed under the SIL Open Font License, Version 1.1. The license is supplied with the font as `assets/nicoclient/font/inter-license.txt` in the mod.
+
 ## Other third-party rights
 
 Minecraft, Mojang, Microsoft, Fabric, Modrinth, Electron, and their names, logos, software, and other assets belong to their respective owners. NicoClient is independent and is not an official Minecraft product or affiliated with Mojang or Microsoft. Mods and other content obtained through third-party services are subject to their respective owners' terms; they are not covered by NicoClient's copyright notice.

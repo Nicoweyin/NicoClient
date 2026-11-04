@@ -3,7 +3,7 @@
 ## Launcher
 - Electron + TypeScript project with a dark blue/purple interface: Home, Mods, Cosmetics and Settings. Build and smoke test pass.
 - PLAY adds the NicoClient profile to the official Minecraft Launcher, installs Fabric API and the NicoClient JAR into `%APPDATA%\NicoClient`, and opens the official launcher, which handles sign-in, game files, Java and memory. NicoClient's own Microsoft sign-in and game launch were removed on 2026-11-04 (last present in commit `4d31924`) after Minecraft Services returned HTTP 403. NicoClient handles no account tokens.
-- Starting the game from the official launcher with this profile has not been verified in this project yet.
+- The owner reported on 2026-11-04 that playing through the official launcher with this profile works.
 - The launcher creates `%APPDATA%\NicoClient` and its `mods`, `config`, `resourcepacks`, `shaderpacks` and `logs` folders on startup; the NSIS installer does the same.
 - Modrinth search, dependency-aware installation with SHA-512 and size checks, listing, toggling, uninstalling, update checks and one-click updates with rollback are implemented. Unknown local mods and incompatibilities require manual review.
 - Free cosmetic preference controls persist locally; Fabric-side rendering is not implemented.
@@ -12,6 +12,7 @@
 
 ## Fabric mod
 - Client-only project targeting Minecraft 1.21.11, Fabric Loader 0.20.1 and Fabric API 0.141.6+1.21.11 with official Mojang mappings. The remapped JAR is `fabric-mod/build/libs/nicoclient-fabric-0.1.0.jar`.
+- The in-game menu, settings screen, HUD and HUD editor use a custom rounded, animated look (`Ui`, `AnimatedScreen`) instead of vanilla buttons. Its text uses the bundled Inter font.
 - `gradle runClientGameTest` runs the mod in a real client with a temporary world. See `FEATURES.md` for what it covers and `fabric-mod/LOCAL_TESTING.md` for manual tests.
 
 ## Environment

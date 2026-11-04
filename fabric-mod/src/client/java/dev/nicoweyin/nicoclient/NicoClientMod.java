@@ -12,14 +12,14 @@ import org.lwjgl.glfw.GLFW;
 
 public final class NicoClientMod implements ClientModInitializer {
     public static final ModuleManager MODULES = new ModuleManager();
-    public static KeyMapping zoomKey;
+    public static KeyMapping zoomKey, menuKey;
     @Override
     public void onInitializeClient() {
         MODULES.load();
         TrajectoryRenderer.register();
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("nicoclient", "controls"));
         KeyMapping toggle = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.fps", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
-        KeyMapping gui = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));
+        KeyMapping gui = menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));
         zoomKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.zoom", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, category));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggle.consumeClick()) { MODULES.fps.enabled = !MODULES.fps.enabled; MODULES.save(); }

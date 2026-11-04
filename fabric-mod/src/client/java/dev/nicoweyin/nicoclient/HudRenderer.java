@@ -13,7 +13,9 @@ import java.util.Locale;
 
 /** Draws every enabled HUD module and provides the values they display. */
 public final class HudRenderer {
-    private static final int BACKGROUND = 0xB0181732, TEXT = 0xFFB2F4F8, PRESSED = 0xD05BBDD3;
+    private static final int BACKGROUND = 0xB00D0F1E, TEXT = 0xFFF3F3FF, PRESSED = 0xE0736AF5;
+    private static final float[] keyAmount = new float[4];
+    private static long lastKeyFrame;
     private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
     private static final long STARTED = System.currentTimeMillis();
@@ -42,7 +44,7 @@ public final class HudRenderer {
         ModuleManager modules = NicoClientMod.MODULES;
         if (module == modules.keys) return 52;
         if (module == modules.armor) return 72;
-        return Minecraft.getInstance().font.width(text(module)) + 8;
+        return Ui.width(text(module)) + 8;
     }
 
     public static String text(ModuleManager.HudModule module) {
@@ -113,23 +115,31 @@ public final class HudRenderer {
     }
 
     private static void label(GuiGraphics g, Minecraft client, String text, int x, int y) {
-        g.fill(x, y, x + client.font.width(text) + 8, y + 15, BACKGROUND);
-        g.drawString(client.font, text, x + 4, y + 4, TEXT, false);
+        Ui.rounded(g, x, y, Ui.width(text) + 8, 15, 4, BACKGROUND);
+        Ui.text(g, text, x + 4, y + 4, TEXT);
     }
 
     private static void keys(GuiGraphics g, Minecraft client, int x, int y) {
-        key(g, client, "W", x + 18, y, client.options.keyUp.isDown());
-        key(g, client, "A", x, y + 18, client.options.keyLeft.isDown());
-        key(g, client, "S", x + 18, y + 18, client.options.keyDown.isDown());
-        key(g, client, "D", x + 36, y + 18, client.options.keyRight.isDown());
+        long now = System.nanoTime();
+        float seconds = lastKeyFrame == 0 ? 0 : Math.min(0.1f, (now - lastKeyFrame) / 1e9f);
+        lastKeyFrame = now;
+        key(g, client, 0, "W", x + 18, y, client.options.keyUp.isDown(), seconds);
+        key(g, client, 1, "A", x, y + 18, client.options.keyLeft.isDown(), seconds);
+        key(g, client, 2, "S", x + 18, y + 18, client.options.keyDown.isDown(), seconds);
+        key(g, client, 3, "D", x + 36, y + 18, client.options.keyRight.isDown(), seconds);
     }
 
-    private static void key(GuiGraphics g, Minecraft client, String label, int x, int y, boolean down) {
-        g.fill(x, y, x + 16, y + 16, down ? PRESSED : BACKGROUND);
-        g.drawString(client.font, label, x + 5, y + 4, 0xFFFFFFFF, false);
+    private static void key(GuiGraphics g, Minecraft client, int index, String label, int x, int y, boolean down, float seconds) {
+        keyAmount[index] = Ui.approach(keyAmount[index], down ? 1 : 0, seconds, 24);
+        Ui.rounded(g, x, y, 16, 16, 4, Ui.mix(BACKGROUND, PRESSED, keyAmount[index]));
+        Ui.text(g, label, x + (16 - Ui.width(label)) / 2f, y + 4, 0xFFFFFFFF);
     }
 
     private static void armor(GuiGraphics g, Minecraft client, int x, int y) {
+        boolean wearing = false;
+        for (EquipmentSlot slot : ARMOR) wearing |= !client.player.getItemBySlot(slot).isEmpty();
+        if (!wearing) return;
+        Ui.rounded(g, x - 1, y - 1, 74, 18, 4, BACKGROUND);
         int offset = 0;
         for (EquipmentSlot slot : ARMOR) {
             ItemStack stack = client.player.getItemBySlot(slot);
