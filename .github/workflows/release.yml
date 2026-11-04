@@ -77,14 +77,19 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build and publish the installer
-        run: npm run build && npx electron-builder --win nsis --publish always
+      - name: Build the installer
+        run: npm run build && npx electron-builder --win nsis --publish never
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Add the release notes
+      # One command with all files, so uploads cannot race and create duplicate releases.
+      - name: Publish the release
         shell: bash
-        run: gh release edit "$GITHUB_REF_NAME" --title "NicoClient ${GITHUB_REF_NAME#v}" --notes-file .github/release-notes.md --draft=false --latest
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "release/NicoClient-Setup-$version.exe" \
+            "release/NicoClient-Setup-$version.exe.blockmap" \
+            release/latest.yml \
+            --verify-tag --latest --title "NicoClient $version" --notes-file .github/release-notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
