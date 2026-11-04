@@ -36,3 +36,6 @@ tokens/
 /shaderpacks/
 /logs/
 /saves/
+/fabric-mod/.gradle/
+/fabric-mod/build/
+/fabric-mod/run/

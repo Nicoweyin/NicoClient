@@ -2,8 +2,18 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('nicoClient', {
   openModsFolder: (): Promise<void> => ipcRenderer.invoke('open-mods-folder'),
+  openOfficialLauncher: (): Promise<void> => ipcRenderer.invoke('open-official-launcher'),
   signIn: (): Promise<{ ok: boolean; name?: string; message?: string }> => ipcRenderer.invoke('account-sign-in'),
   signOut: (): Promise<void> => ipcRenderer.invoke('account-sign-out'),
+  removeAccount: (): Promise<void> => ipcRenderer.invoke('account-remove'),
+  play: () => ipcRenderer.invoke('game-play'),
+  stopGame: () => ipcRenderer.invoke('game-stop'),
+  openGameFolder: () => ipcRenderer.invoke('open-game-folder'),
+  setupOfficialProfile: () => ipcRenderer.invoke('official-profile-setup'),
+  launcherInfo: () => ipcRenderer.invoke('launcher-info'),
+  saveSettings: (settings: unknown) => ipcRenderer.invoke('settings-save', settings),
+  updateMod: (name: string) => ipcRenderer.invoke('mods-update', name),
+  onGameState: (callback: (state: unknown) => void) => ipcRenderer.on('game-state', (_event, state) => callback(state)),
   updateState: () => ipcRenderer.invoke('update-state'),
   checkUpdates: () => ipcRenderer.invoke('update-check'),
   downloadUpdate: () => ipcRenderer.invoke('update-download'),

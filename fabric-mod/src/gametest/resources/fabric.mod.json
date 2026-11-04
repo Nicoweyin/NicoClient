@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "nicoclient-test",
+  "version": "0.1.0",
+  "name": "NicoClient Game Tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["dev.nicoweyin.nicoclient.test.NicoClientGameTest"]
+  },
+  "depends": {
+    "nicoclient": "*",
+    "fabric-client-gametest-api-v1": "*"
+  }
+}

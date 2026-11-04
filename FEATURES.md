@@ -1,31 +1,33 @@
 # Feature roadmap
 
-The in-game items below are planned, not implemented or tested. The launcher includes local cosmetic preference controls only; they do not render in Fabric. The launcher also includes a Modrinth browser and local mod file management; see `BUILD_STATUS.md` for tested behavior and limitations.
+The launcher includes a Windows x64 PLAY workflow for official Minecraft 1.21.11 downloads, Fabric Loader and API installation, NicoClient JAR installation, ownership recheck, progress and game output. Installation components were tested; real-account sign-in and an end-to-end launch have not been verified. See `BUILD_STATUS.md` and `TEST_RESULTS.md`.
+
+The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fullbright, Reduced Particles, Trajectories, a Right Shift module screen and a draggable HUD editor. "Client test" means it ran in a real Minecraft 1.21.11 client through `gradle runClientGameTest` in a temporary single-player world, with screenshots reviewed by eye. That is not yet the same as normal play through the launcher: multiplayer, real mouse dragging and long sessions remain untested. Zoom uses a configurable 2x/4x/8x factor and a rebindable hold key (default C). Fullbright uses configurable ambient-light levels; Trajectories has an optional impact marker. FPS retains its initially unbound separate toggle. Module state, favorites, settings and HUD positions are stored in `config/nicoclient.properties`. Other in-game items below remain planned. The launcher cosmetic controls do not render in Fabric. See `fabric-mod/LOCAL_TESTING.md` for testing and prediction limitations.
 
 ## HUD (15)
-1. [ ] FPS counter
-2. [ ] CPS counter
-3. [ ] Keystrokes
-4. [ ] Coordinates
-5. [ ] Armor HUD
-6. [ ] Ping HUD
-7. [ ] HUD editor with draggable elements
-8. [ ] Clock
-9. [ ] Direction indicator
-10. [ ] Speed display
-11. [ ] Biome display
+1. [x] FPS counter (client test; on by default)
+2. [x] CPS counter (displays in client test; real click counting not exercised)
+3. [x] Keystrokes (W/A/S/D; client test)
+4. [x] Coordinates (client test)
+5. [x] Armor HUD (client test)
+6. [x] Ping HUD (client test in single-player only)
+7. [x] HUD editor for all HUD modules, with layout reset (opens in client test; mouse dragging not exercised)
+8. [x] Clock (client test)
+9. [x] Direction indicator (client test)
+10. [x] Speed display (client test while standing still only)
+11. [x] Biome display (client test)
 12. [ ] Potion effects display
 13. [ ] Held item display
 14. [ ] Durability display
-15. [ ] Session timer
+15. [x] Session timer (client test)
 
 ## Visuals (12)
-16. [ ] Zoom
-17. [ ] Low fire
+16. [x] Zoom (client test)
+17. [x] Low fire (client test, compared while burning)
 18. [ ] No fog
-19. [ ] Reduced particles
+19. [x] Reduced particles (ordinary particles use Minecraft's minimal setting; loads in client test, effect not compared)
 20. [ ] Custom crosshair
-21. [ ] Fullbright
+21. [x] Fullbright (configurable ambient-light minimum; client test, compared at night)
 22. [ ] Weather display controls
 23. [ ] Time display controls
 24. [ ] Custom hotbar styling
@@ -49,13 +51,21 @@ The in-game items below are planned, not implemented or tested. The launcher inc
 40. [ ] Sound volume shortcuts
 
 ## Client Settings (10)
-41. [ ] Right Shift ClickGUI
-42. [ ] Searchable module list
-43. [ ] Module categories
-44. [ ] Module toggles
-45. [ ] Module-specific settings
-46. [ ] Persistent configuration
+41. [x] Right Shift ClickGUI (opens with its real key in client test)
+42. [x] Searchable module list (displays in client test; typing not exercised)
+43. [x] Module categories and filtering (displays in client test; filtering not exercised)
+44. [x] Module toggles (state changes in client test; button clicks not exercised)
+45. [ ] Module-specific settings (zoom, Fullbright and trajectory marker settings compiled; broader settings pending)
+46. [x] Persistent configuration (save and reload checked in client test)
 47. [ ] Keybind customization
 48. [ ] Theme accent selection
 49. [ ] HUD scale settings
 50. [ ] Configuration profiles
+
+## Additional requested modules (planned)
+
+- Visuals: Trajectories for bow, snowballs, eggs, ender pearls and splash potions with optional impact marker (path draws in client test for a snowball; accuracy not compared with real throws); Hit Color, Block Outline, Clear Water and FOV Changer remain planned.
+- HUD: Server Info.
+- Performance: Smart Animations, Entity Render Distance, Dynamic FPS, Performance Presets.
+- Utility: Inventory Profiles, Screenshot Manager, Auto Reconnect.
+- Cosmetics: actual Fabric-side Capes, Wings, Particle Cosmetics, HUD Themes and GUI Themes. Launcher cosmetic controls are preferences, not in-game rendering.
