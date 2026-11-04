@@ -18,6 +18,8 @@ Run `npm.cmd test` for the launcher tests and `gradle runClientGameTest` in `fab
 
 Run `gradle build` in `fabric-mod/`, then `npm.cmd run package:win`, and send `release/NicoClient-Setup-<version>.exe`. It installs for the current Windows user and adds Start menu and desktop shortcuts. Friends need the official Minecraft Launcher with their own Minecraft Java account. The installer is unsigned, so Windows SmartScreen shows a warning: choose **More info**, then **Run anyway**.
 
+Published releases come from GitHub Actions: see `RELEASE.md`.
+
 ## In-game controls
 
 Right Shift opens the menu. Left click a module to switch it, right click to configure it, including a toggle key. **Settings** holds the accent color, HUD size, background and text color. **Edit HUD** moves HUD modules; right click one there to configure it.

@@ -1,4 +1,13 @@
-# Future Windows releases
+# Windows releases
+
+## Publishing a new version
+
+Pushing a version tag publishes a release through `.github/workflows/release.yml`, and installed launchers then update on their own:
+
+1. Raise the version in `package.json` and `package-lock.json` and commit it.
+2. Push `main`, then tag and push: `git tag v1.2.3` and `git push origin v1.2.3`. The tag must match the version.
+
+GitHub builds the mod and the installer, runs the launcher tests, and publishes the installer, blockmap and `latest.yml`. The client game test is not part of this, so run `gradle runClientGameTest` locally first. A release is public as soon as the tag is pushed, so ask the owner first. The sections below describe the earlier manual process.
 
 Do not upload or publish without the project owner's approval. `npm.cmd run package:win` uses `--publish never` and only builds locally. The updater targets public GitHub Releases at `Nicoweyin/NicoClient`; no GitHub token is embedded. A private repository would require a separate authenticated distribution design.
 

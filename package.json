@@ -20,7 +20,7 @@
   "build": {
     "appId": "dev.nicoweyin.nicoclient",
     "productName": "NicoClient",
-    "publish": [{ "provider": "github", "owner": "Nicoweyin", "repo": "NicoClient" }],
+    "publish": [{ "provider": "github", "owner": "Nicoweyin", "repo": "NicoClient", "releaseType": "release" }],
     "generateUpdatesFilesForAllChannels": true,
     "directories": {
       "output": "release"
