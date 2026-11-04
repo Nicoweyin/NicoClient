@@ -8,10 +8,46 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 
 public final class ModuleManager {
+    private static final Map<String, String> DESCRIPTIONS = Map.ofEntries(
+        Map.entry("fps", "Frames per second"),
+        Map.entry("keys", "Shows the movement keys you press"),
+        Map.entry("cps", "Clicks per second"),
+        Map.entry("coords", "Your position in the world"),
+        Map.entry("direction", "The direction you are facing"),
+        Map.entry("speed", "How fast you are moving"),
+        Map.entry("biome", "The biome you are standing in"),
+        Map.entry("ping", "Your connection delay to the server"),
+        Map.entry("clock", "The time on your computer"),
+        Map.entry("session", "How long you have been playing"),
+        Map.entry("armor", "Your armor and its durability"),
+        Map.entry("held", "The item in your hand"),
+        Map.entry("day", "How many days the world has run"),
+        Map.entry("light", "The light level at your position"),
+        Map.entry("memory", "How much RAM Minecraft uses"),
+        Map.entry("server", "The server and its player count"),
+        Map.entry("potions", "Active effects and time left"),
+        Map.entry("zoom", "Hold the zoom key to look closer"),
+        Map.entry("crosshair", "Your own crosshair style and color"),
+        Map.entry("lowfire", "Lowers the fire on your screen"),
+        Map.entry("fullbright", "See clearly in the dark"),
+        Map.entry("trajectories", "Shows where throwables will fly"),
+        Map.entry("nofog", "Removes distance fog"),
+        Map.entry("noweather", "Hides rain and storms for you"),
+        Map.entry("time", "Pick a time of day for you"),
+        Map.entry("novignette", "Removes dark screen corners"),
+        Map.entry("nohurtcam", "Stops the camera shake when hit"),
+        Map.entry("togglesprint", "Press sprint once to keep sprinting"),
+        Map.entry("togglesneak", "Press sneak once to keep sneaking"),
+        Map.entry("copycoords", "Set a key to copy your position"),
+        Map.entry("chattime", "Adds the time to chat messages"),
+        Map.entry("particles", "Fewer particles for more FPS"),
+        Map.entry("dynamicfps", "Saves power while in the background"));
+
     /** One configurable value of a module, shown as switch or segmented choice. */
     public static final class Setting {
         public final String id, label;
@@ -44,6 +80,7 @@ public final class ModuleManager {
             this.id = id; this.name = name; this.category = category; this.enabledByDefault = enabledByDefault;
             this.enabled = enabledByDefault;
         }
+        public String description() { return DESCRIPTIONS.getOrDefault(id, ""); }
         Setting toggle(String id, String label, boolean fallback) {
             Setting setting = new Setting(id, label, new String[0], new int[] {0, 1}, fallback ? 1 : 0);
             settings.add(setting);
@@ -87,7 +124,7 @@ public final class ModuleManager {
     public final HudModule memory = new HudModule("memory", "Memory Usage", false, THIRD_COLUMN, 5, 15);
     public final HudModule server = new HudModule("server", "Server Info", false, THIRD_COLUMN, 5 + ROW, 15);
     public final HudModule potions = new HudModule("potions", "Potion Effects", false, THIRD_COLUMN, 5 + ROW * 2, 15);
-    public final Module zoom = new Module("zoom", "Zoom", "Visuals");
+    public final Module zoom = new Module("zoom", "Zoom", "Visuals", true);
     public final Module crosshair = new Module("crosshair", "Custom Crosshair", "Visuals");
     public final Module lowFire = new Module("lowfire", "Low Fire", "Visuals");
     public final Module fullbright = new Module("fullbright", "Fullbright", "Visuals");
@@ -135,6 +172,8 @@ public final class ModuleManager {
     public final Setting hudText = client.choice("hudtext", "HUD text color", 0, new String[] {"White", "Accent", "Cyan", "Yellow"}, 0, 1, 2, 3);
     public final Setting clickSounds = client.toggle("sounds", "Menu click sounds", true);
 
+    /** False until the first-run hint about the menu key has been shown. */
+    public boolean welcomed;
     public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions);
     public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, toggleSprint, toggleSneak, copyCoords, chatTime, particles, dynamicFps)).toList();
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
@@ -146,6 +185,7 @@ public final class ModuleManager {
         if (!Files.isRegularFile(path)) return;
         try (Reader reader = Files.newBufferedReader(path)) {
             properties.load(reader);
+            welcomed = Boolean.parseBoolean(properties.getProperty("client.welcomed", "true"));
             for (Module m : withClient()) {
                 m.enabled = Boolean.parseBoolean(properties.getProperty(m.id + ".enabled", Boolean.toString(m.enabledByDefault)));
                 m.favorite = Boolean.parseBoolean(properties.getProperty(m.id + ".favorite", "false"));
@@ -184,6 +224,7 @@ public final class ModuleManager {
             properties.setProperty(m.id + ".x", Integer.toString(m.x));
             properties.setProperty(m.id + ".y", Integer.toString(m.y));
         }
+        properties.setProperty("client.welcomed", Boolean.toString(welcomed));
         try {
             Files.createDirectories(path.getParent());
             try (Writer writer = Files.newBufferedWriter(path)) { properties.store(writer, "NicoClient settings"); }

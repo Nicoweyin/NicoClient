@@ -81,12 +81,29 @@ app.whenReady().then(async () => {
     assert.equal(window.webContents.getLastWebPreferences().contextIsolation, true);
     assert.equal(window.webContents.getLastWebPreferences().nodeIntegration, false);
 
-    // PLAY explains what to do when the official launcher has never been started.
+    // A launcher that has never run is opened so it can create its files. The test pretends one is installed.
+    process.env.LOCALAPPDATA = testData;
+    fs.mkdirSync(path.join(testData, 'Packages', 'Microsoft.4297127D64EC6_8wekyb3d8bbwe'), { recursive: true });
     await run("document.getElementById('play').click()");
-    await wait(300);
-    assert.match(await run("document.getElementById('game-status').textContent"), /has not been set up yet/);
-    assert.equal(officialLauncherArgs, undefined);
+    for (let i = 0; !officialLauncherArgs && i < 100; i++) await wait(20);
+    await wait(100);
+    assert.match(await run("document.getElementById('game-status').textContent"), /first start/);
+    assert.ok(officialLauncherArgs);
+    officialLauncherArgs = undefined;
     assert.equal(await run("document.getElementById('play').disabled"), false);
+
+    // Without any launcher, PLAY explains what is missing and offers the download.
+    fs.rmSync(path.join(testData, 'Packages'), { recursive: true, force: true });
+    delete process.env['ProgramFiles(x86)']; delete process.env.ProgramFiles;
+    await run("document.querySelector('[data-page=home]').click()");
+    await wait(200);
+    assert.equal(await run("document.getElementById('get-launcher').hidden"), false);
+    assert.equal(await run("document.getElementById('tile-launcher').textContent"), 'Not found');
+    await run("document.getElementById('play').click()");
+    await wait(200);
+    assert.match(await run("document.getElementById('game-status').textContent"), /was not found/);
+    assert.equal(officialLauncherArgs, undefined);
+    fs.mkdirSync(path.join(testData, 'Packages', 'Microsoft.4297127D64EC6_8wekyb3d8bbwe'), { recursive: true });
 
     // PLAY sets up the profile and opens the official launcher.
     fs.mkdirSync(minecraft, { recursive: true });
@@ -99,6 +116,13 @@ app.whenReady().then(async () => {
     const profiles = Object.values(JSON.parse(fs.readFileSync(path.join(minecraft, 'launcher_profiles.json'), 'utf8')).profiles).map(profile => profile.name).sort();
     assert.deepEqual(profiles, ['Mine', 'NicoClient Fabric 1.21.11']);
     assert.deepEqual(fs.readdirSync(path.join(gameDirectory, 'mods')).sort(), ['fabric-api-test.jar', 'nicoclient-fabric-0.1.0.jar']);
+    await run("document.querySelector('[data-page=home]').click()");
+    await wait(200);
+    assert.equal(await run("document.getElementById('tile-profile').textContent"), 'Ready');
+    assert.equal(await run("document.getElementById('get-launcher').hidden"), true);
+    await wait(200);
+    assert.deepEqual(await run("[...document.querySelectorAll('.installed-name strong')].map(e => e.textContent).sort()"), ['Fabric API', 'NicoClient']);
+    assert.equal(await run("document.querySelectorAll('#installed-mods .installed-row button:not([hidden])').length"), 0, 'required mods cannot be removed');
 
     await run("document.getElementById('update-check').click()");
     await wait(100);

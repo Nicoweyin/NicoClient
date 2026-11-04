@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { copyFile, lstat, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ensureMod } from './modrinth';
@@ -6,6 +7,30 @@ import { ensureMod } from './modrinth';
 const VERSION = 'fabric-loader-0.20.1-1.21.11';
 const NAME = 'NicoClient Fabric 1.21.11';
 const PROFILE_URL = 'https://meta.fabricmc.net/v2/versions/loader/1.21.11/0.20.1/profile/json';
+
+export type OfficialLauncher = { kind: 'store' } | { kind: 'exe'; path: string };
+
+// The Microsoft Store app keeps a package folder per user; older installers use Program Files.
+export function findOfficialLauncher(env: NodeJS.ProcessEnv = process.env, exists: (file: string) => boolean = existsSync): OfficialLauncher | undefined {
+  if (env.LOCALAPPDATA && exists(path.join(env.LOCALAPPDATA, 'Packages', 'Microsoft.4297127D64EC6_8wekyb3d8bbwe'))) return { kind: 'store' };
+  for (const base of [env['ProgramFiles(x86)'], env.ProgramFiles]) {
+    if (!base) continue;
+    const file = path.join(base, 'Minecraft Launcher', 'MinecraftLauncher.exe');
+    if (exists(file)) return { kind: 'exe', path: file };
+  }
+  return undefined;
+}
+
+export type ProfileState = 'first-run' | 'missing' | 'ready';
+
+export async function profileState(minecraft: string): Promise<ProfileState> {
+  let text: string;
+  try { text = await readFile(path.join(minecraft, 'launcher_profiles.json'), 'utf8'); } catch { return 'first-run'; }
+  try {
+    const profiles = JSON.parse(text).profiles;
+    return Object.values(profiles as Record<string, any>).some(profile => profile?.name === NAME) ? 'ready' : 'missing';
+  } catch { return 'missing'; }
+}
 
 // The NicoClient JAR is owned by the launcher, so a rebuilt or updated mod simply replaces the old one.
 export async function installLocalMod(source: string, mods: string): Promise<void> {
@@ -19,11 +44,15 @@ export async function installLocalMod(source: string, mods: string): Promise<voi
   if (existing && hash(await readFile(source)) === hash(await readFile(target))) return;
   const temp = `${target}.${process.pid}.tmp`;
   try { await copyFile(source, temp); await rename(temp, target); }
-  finally { await unlink(temp).catch(() => {}); }
+  catch (error: any) {
+    // A running game keeps its mods open, and Windows then refuses to replace them.
+    if (['EPERM', 'EACCES', 'EBUSY'].includes(error?.code)) throw new Error('Close Minecraft first, then press PLAY again.');
+    throw error;
+  } finally { await unlink(temp).catch(() => {}); }
 }
 
 // Only adds NicoClient's own profile and files; existing profiles and accounts are left untouched.
-export async function setupOfficialProfile(minecraft: string, game: string, modJar: string): Promise<void> {
+export async function setupOfficialProfile(minecraft: string, game: string, modJar: string, icon?: string): Promise<void> {
   const profileFile = path.join(minecraft, 'launcher_profiles.json');
   const original = await readFile(profileFile).catch(() => { throw new Error('The official Minecraft Launcher has not been set up yet. Install it, start it once, close it, and press PLAY again.'); });
   const profiles = JSON.parse(original.toString('utf8'));
@@ -45,8 +74,11 @@ export async function setupOfficialProfile(minecraft: string, game: string, modJ
   await ensureMod(mods, 'P7dR8mSH', /^fabric-api-/i, () => {});
   await installLocalMod(modJar, mods);
 
-  if (matches.length) return;
-  profiles.profiles[randomUUID().replace(/-/g, '')] = { name: NAME, type: 'custom', created: new Date().toISOString(), lastVersionId: VERSION, gameDir: game };
+  // Most recently used profiles come first in the official launcher.
+  const now = new Date().toISOString();
+  const existing = matches[0];
+  if (existing) { existing.lastUsed = now; if (icon) existing.icon = icon; }
+  else profiles.profiles[randomUUID().replace(/-/g, '')] = { name: NAME, type: 'custom', created: now, lastUsed: now, lastVersionId: VERSION, gameDir: game, ...(icon ? { icon } : {}) };
   const temp = path.join(minecraft, `.nicoclient-profile-${randomUUID()}.tmp`);
   try {
     await writeFile(temp, JSON.stringify(profiles, null, 2), { flag: 'wx' });

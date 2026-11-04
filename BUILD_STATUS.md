@@ -2,6 +2,7 @@
 
 ## Launcher
 - Electron + TypeScript project with a dark blue/purple interface: Home, Mods, Cosmetics and Settings. Build and smoke test pass.
+- Home shows whether the official launcher and profile are ready and offers the launcher download when it is missing. The Mods page opens with popular mods and marks installed ones; required mods cannot be removed there.
 - PLAY adds the NicoClient profile to the official Minecraft Launcher, installs Fabric API and the NicoClient JAR into `%APPDATA%\NicoClient`, and opens the official launcher, which handles sign-in, game files, Java and memory. NicoClient's own Microsoft sign-in and game launch were removed on 2026-11-04 (last present in commit `4d31924`) after Minecraft Services returned HTTP 403. NicoClient handles no account tokens.
 - The owner reported on 2026-11-04 that playing through the official launcher with this profile works.
 - The launcher creates `%APPDATA%\NicoClient` and its `mods`, `config`, `resourcepacks`, `shaderpacks` and `logs` folders on startup; the NSIS installer does the same.

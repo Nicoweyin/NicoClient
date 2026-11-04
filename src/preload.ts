@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('nicoClient', {
   play: (): Promise<{ ok: boolean; message?: string }> => ipcRenderer.invoke('game-play'),
   openGameFolder: () => ipcRenderer.invoke('open-game-folder'),
   launcherInfo: () => ipcRenderer.invoke('launcher-info'),
+  openLauncherDownload: () => ipcRenderer.invoke('open-launcher-download'),
+  installedProjects: () => ipcRenderer.invoke('mods-installed-projects'),
   updateMod: (name: string) => ipcRenderer.invoke('mods-update', name),
   updateState: () => ipcRenderer.invoke('update-state'),
   checkUpdates: () => ipcRenderer.invoke('update-check'),

@@ -83,7 +83,11 @@ public final class Ui {
         g.drawString(Minecraft.getInstance().font, styled(text), Math.round(x), Math.round(y), color, false);
     }
 
-    private static Component styled(String text) { return Component.literal(text).withStyle(FONT); }
+    // Inter breaks apart at GUI scale 1, where the pixel font is the readable one.
+    private static Component styled(String text) {
+        Component component = Component.literal(text);
+        return Minecraft.getInstance().getWindow().getGuiScale() <= 1 ? component : component.copy().withStyle(FONT);
+    }
 
     public static int width(String text) { return Minecraft.getInstance().font.width(styled(text)); }
 

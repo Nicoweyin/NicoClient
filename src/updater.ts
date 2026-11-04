@@ -26,7 +26,11 @@ export function setupUpdater(): void {
   });
   autoUpdater.on('download-progress', progress => notify({ ...state, status: 'downloading', message: 'Downloading update…', percent: progress.percent }));
   autoUpdater.on('update-downloaded', () => { downloaded = true; notify({ ...state, status: 'downloaded', message: 'Update downloaded. Restart when ready.' }); });
-  autoUpdater.on('error', () => notify({ status: 'error', message: 'Update check or download failed. Check your connection and try again.' }));
+  autoUpdater.on('error', error => {
+    // GitHub answers 404 until the first release exists; that is not a problem for the user.
+    if (/\b404\b/.test(String(error?.message))) notify({ status: 'current', message: 'No published updates yet.' });
+    else notify({ status: 'error', message: 'Update check or download failed. Check your connection and try again.' });
+  });
   ipcMain.handle('update-state', event => { trusted(event); return state; });
   ipcMain.handle('update-check', async event => {
     trusted(event);

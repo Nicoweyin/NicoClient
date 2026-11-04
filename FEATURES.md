@@ -24,7 +24,7 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 ## Visuals (12)
 16. [x] Zoom (client test)
 17. [x] Low fire (client test, compared while burning)
-18. [x] No fog (loads in client test; effect not compared)
+18. [x] No fog (client test, compared on and off)
 19. [x] Reduced particles (ordinary particles use Minecraft's minimal setting; loads in client test, effect not compared)
 20. [x] Custom crosshair with style, size, gap and color (client test)
 21. [x] Fullbright (configurable ambient-light minimum; client test, compared at night)
@@ -45,19 +45,19 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 34. [x] Chat timestamps (client test)
 35. [ ] Chat history extension
 36. [ ] Waypoint management
-37. [x] Copy Coordinates (key action not exercised)
+37. [x] Copy Coordinates (key press and clipboard checked in client test)
 38. [ ] Inventory search
 39. [ ] Item pickup notifications
 40. [ ] Sound volume shortcuts
 
 ## Client Settings (10)
 41. [x] Rounded, animated module menu with a sidebar and the Inter font (opens and closes with Right Shift in client test)
-42. [x] Searchable, smoothly scrolling module list (typing checked in client test; scrolling not exercised)
-43. [x] Module categories and filtering (displays in client test; clicking a category not exercised)
+42. [x] Searchable, smoothly scrolling module list with descriptions (typing and scrolling checked in client test)
+43. [x] Module categories and filtering (clicking a category checked in client test)
 44. [x] Animated module switches (real mouse click checked in client test)
 45. [x] Right click any module to configure it (real right click checked in client test; not every setting was exercised)
 46. [x] Persistent configuration (save and reload checked in client test)
-47. [x] Per-module toggle keys (key press checked in client test; choosing a key in the menu not exercised)
+47. [x] Per-module toggle keys (choosing and pressing a key checked in client test)
 48. [x] Theme accent selection (client test)
 49. [x] HUD scale settings (client test at 125%)
 50. [ ] Configuration profiles

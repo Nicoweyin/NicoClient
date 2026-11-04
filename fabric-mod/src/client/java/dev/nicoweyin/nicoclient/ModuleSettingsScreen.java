@@ -44,6 +44,15 @@ public final class ModuleSettingsScreen extends AnimatedScreen {
         return module.hotkey < 0 ? "Not set" : InputConstants.Type.KEYSYM.getOrCreate(module.hotkey).getDisplayName().getString();
     }
 
+    /** Screen position of a row and of one choice in it, for the game test. */
+    public int[] rowCenter(Object row) { return new int[] {left() + 60, Math.round(rowY(rows.indexOf(row))) + ROW / 2}; }
+
+    public int[] segmentCenter(ModuleManager.Setting setting, int option) {
+        return new int[] {Math.round(segmentX(setting, option)) + segmentWidth(setting.labels[option]) / 2, Math.round(rowY(rows.indexOf(setting))) + ROW / 2};
+    }
+
+    public static final Object HOTKEY_ROW = HOTKEY;
+
     private static int segmentWidth(String label) { return Math.max(26, Ui.width(label) + 12); }
 
     private int segmentsWidth(ModuleManager.Setting setting) {

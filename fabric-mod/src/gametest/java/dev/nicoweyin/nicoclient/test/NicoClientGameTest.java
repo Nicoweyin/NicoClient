@@ -28,6 +28,7 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             // Only the default module is on at first.
             context.runOnClient(client -> check(m.fps.enabled && !m.coords.enabled, "default module state"));
             context.takeScreenshot("nicoclient-1-defaults");
+            context.runOnClient(client -> check(m.zoom.enabled && m.welcomed, "Zoom is on by default and the first-run hint was shown"));
 
             // Every HUD module together, plus each mixin-backed module.
             context.runOnClient(client -> {
@@ -105,7 +106,11 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             // Typing filters the list.
             context.getInput().typeChars("zoom");
             context.waitTicks(5);
-            context.runOnClient(client -> check(((NicoScreen) client.screen).visibleModules().equals(java.util.List.of(m.zoom)), "search finds only Zoom"));
+            context.runOnClient(client -> {
+                NicoScreen screen = (NicoScreen) client.screen;
+                check(screen.visibleModules().contains(m.zoom), "search finds Zoom");
+                check(screen.displayedQuery().equals("zoom"), "the typed search text is displayed");
+            });
             context.takeScreenshot("nicoclient-6c-menu-search");
             context.getInput().pressKey(GLFW.GLFW_KEY_BACKSPACE);
             context.waitTicks(2);
@@ -205,6 +210,97 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("nicoclient-9d-menu-green");
             context.setScreen(() -> null);
             context.runOnClient(client -> { m.accent.set(0); m.hudScale.set(100); m.crosshair.enabled = false; m.customTime.enabled = false; m.chatTime.enabled = false; });
+
+            // Controls that had not been exercised yet, all with real input.
+            context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT_SHIFT);
+            context.waitTicks(15);
+            int[] visuals = context.computeOnClient(client -> ((NicoScreen) client.screen).categoryCenter(2));
+            moveTo(context, visuals[0], visuals[1]);
+            context.waitTick();
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(8);
+            context.runOnClient(client -> check(((NicoScreen) client.screen).visibleModules().stream().allMatch(module -> module.category.equals("Visuals")), "clicking Visuals filters the list"));
+            context.takeScreenshot("nicoclient-10a-category");
+            int[] star = context.computeOnClient(client -> ((NicoScreen) client.screen).starCenter(m.zoom));
+            check(star != null, "Zoom star is visible");
+            boolean favoriteBefore = context.computeOnClient(client -> m.zoom.favorite);
+            moveTo(context, star[0], star[1]);
+            context.waitTick();
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(m.zoom.favorite != favoriteBefore, "clicking the star changes the favorite"));
+            int[] all = context.computeOnClient(client -> ((NicoScreen) client.screen).categoryCenter(0));
+            moveTo(context, all[0], all[1]);
+            context.waitTick();
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(5);
+            context.runOnClient(client -> {
+                NicoScreen screen = (NicoScreen) client.screen;
+                check(screen.toggleCenter(m.particles) == null, "the last module starts out of view");
+                screen.mouseScrolled(200, 200, 0, -100);
+            });
+            context.waitTicks(25);
+            context.runOnClient(client -> check(((NicoScreen) client.screen).toggleCenter(m.dynamicFps) != null, "scrolling reaches the last module"));
+            context.takeScreenshot("nicoclient-10b-scrolled");
+            context.setScreen(() -> null);
+
+            // Choosing a segment and a toggle key with real input, then using that key.
+            context.setScreen(() -> new ModuleSettingsScreen(m.copyCoords, null));
+            context.waitTicks(15);
+            int[] keyRow = context.computeOnClient(client -> ((ModuleSettingsScreen) client.screen).rowCenter(ModuleSettingsScreen.HOTKEY_ROW));
+            moveTo(context, keyRow[0], keyRow[1]);
+            context.waitTick();
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.takeScreenshot("nicoclient-10c-choose-key");
+            context.getInput().pressKey(GLFW.GLFW_KEY_K);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(m.copyCoords.hotkey == GLFW.GLFW_KEY_K, "the chosen key is stored"));
+            context.setScreen(() -> null);
+            context.runOnClient(client -> { m.copyCoords.enabled = true; client.keyboardHandler.setClipboard("before"); });
+            context.getInput().pressKey(GLFW.GLFW_KEY_K);
+            context.waitTicks(3);
+            context.runOnClient(client -> {
+                String clipboard = client.keyboardHandler.getClipboard();
+                check(clipboard.matches("-?\\d+ -?\\d+ -?\\d+"), "Copy Coordinates copied " + clipboard);
+                m.copyCoords.hotkey = -1;
+            });
+            context.setScreen(() -> new ModuleSettingsScreen(m.crosshair, null));
+            context.waitTicks(15);
+            int[] large = context.computeOnClient(client -> ((ModuleSettingsScreen) client.screen).segmentCenter(m.crosshairSize, 2));
+            moveTo(context, large[0], large[1]);
+            context.waitTick();
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(m.crosshairSize.get() == 6, "clicking a segment chooses it"));
+            context.setScreen(() -> null);
+
+            // Fog, off and on, against the far horizon.
+            context.runOnClient(client -> { client.options.renderDistance().set(4); m.noFog.enabled = false; });
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-11a-fog");
+            context.runOnClient(client -> m.noFog.enabled = true);
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-11b-no-fog");
+            context.runOnClient(client -> m.noFog.enabled = false);
+            context.waitTick();
+
+            // The menu at the other GUI scales players really use.
+            for (int scale : new int[] {1, 3}) {
+                context.runOnClient(client -> {
+                    client.getWindow().setWindowed(1920, 1080);
+                    client.options.guiScale().set(scale);
+                    client.resizeDisplay();
+                });
+                context.waitTicks(5);
+                context.setScreen(NicoScreen::new);
+                context.waitTicks(15);
+                context.takeScreenshot("nicoclient-12-menu-scale-" + scale);
+                context.setScreen(() -> new ModuleSettingsScreen(m.crosshair, null));
+                context.waitTicks(15);
+                context.takeScreenshot("nicoclient-12-settings-scale-" + scale);
+                context.setScreen(() -> null);
+            }
 
             // Settings must reach the disk and load back.
             context.runOnClient(client -> {

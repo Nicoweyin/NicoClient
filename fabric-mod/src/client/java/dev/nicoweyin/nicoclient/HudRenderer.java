@@ -25,6 +25,8 @@ public final class HudRenderer {
     private static boolean leftDown, rightDown;
     /** Lets the day counter read the real time while Custom Time changes what the world shows. */
     public static boolean readingRealTime;
+    private static final float WELCOME_SECONDS = 10;
+    private static long welcomeStarted;
 
     private HudRenderer() {}
 
@@ -45,6 +47,7 @@ public final class HudRenderer {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null || client.options.hideGui) return;
         ModuleManager modules = NicoClientMod.MODULES;
+        welcome(g);
         if (modules.cps.enabled) sampleClicks(client);
         float scale = scale();
         float screenW = g.guiWidth() / scale, screenH = g.guiHeight() / scale;
@@ -61,6 +64,24 @@ public final class HudRenderer {
             else label(g, text(module), x, y);
         }
         g.pose().popMatrix();
+    }
+
+    /** Tells new players once how to find the menu, then fades away. */
+    private static void welcome(GuiGraphics g) {
+        ModuleManager m = NicoClientMod.MODULES;
+        if (welcomeStarted == 0) {
+            if (m.welcomed) return;
+            welcomeStarted = System.currentTimeMillis();
+            m.welcomed = true;
+            m.save();
+        }
+        float elapsed = (System.currentTimeMillis() - welcomeStarted) / 1000f;
+        if (elapsed > WELCOME_SECONDS) return;
+        float fade = Math.min(1, Math.min(elapsed * 3, (WELCOME_SECONDS - elapsed) * 2));
+        String text = "Press " + NicoClientMod.menuKey.getTranslatedKeyMessage().getString() + " to open NicoClient";
+        int width = Ui.width(text) + 24, x = (g.guiWidth() - width) / 2, y = g.guiHeight() / 4;
+        Ui.rounded(g, x, y, width, 22, 8, Ui.alpha(Ui.PANEL, fade));
+        Ui.text(g, text, x + 12, y + 8, Ui.alpha(Ui.TEXT, fade));
     }
 
     /** Modules without anything to show stay hidden instead of drawing an empty box. */

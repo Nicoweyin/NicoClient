@@ -31,7 +31,7 @@ public final class NicoScreen extends AnimatedScreen {
         String needle = query.toLowerCase(Locale.ROOT);
         return NicoClientMod.MODULES.modules.stream().filter(m ->
             (category == 0 || (category == FAVORITES ? m.favorite : m.category.equals(CATEGORIES[category])))
-            && (m.name + " " + m.category).toLowerCase(Locale.ROOT).contains(needle)).toList();
+            && (m.name + " " + m.category + " " + m.description()).toLowerCase(Locale.ROOT).contains(needle)).toList();
     }
 
     private float maxScroll(int count) { return Math.max(0, count * (ROW + ROW_GAP) - ROW_GAP - listHeight()); }
@@ -71,12 +71,15 @@ public final class NicoScreen extends AnimatedScreen {
         int x = contentX(), w = contentWidth();
         // Typing always goes to the search box; the vanilla box only works with the vanilla font.
         Ui.rounded(g, x, top + 8, w, 22, 7, Ui.alpha(Ui.SURFACE, alpha));
-        if (query.isEmpty()) Ui.text(g, "Search modules", x + 11, top + 15, Ui.alpha(Ui.MUTED, alpha));
-        String hint = "Right click to configure";
-        if (w > Ui.width(hint) + 110) Ui.text(g, hint, x + w - Ui.width(hint) - 11, top + 15, Ui.alpha(Ui.OFF, alpha) | 0x00303030);
-        else Ui.text(g, Ui.fit(query, w - 24), x + 11, top + 15, Ui.alpha(Ui.TEXT, alpha));
+        if (query.isEmpty()) {
+            Ui.text(g, "Search modules", x + 11, top + 15, Ui.alpha(Ui.MUTED, alpha));
+            String hint = "Right click to configure";
+            if (w > Ui.width(hint) + 110) Ui.text(g, hint, x + w - Ui.width(hint) - 11, top + 15, Ui.alpha(Ui.mix(Ui.MUTED, Ui.SURFACE, 0.35f), alpha));
+        } else {
+            Ui.text(g, displayedQuery(), x + 11, top + 15, Ui.alpha(Ui.TEXT, alpha));
+        }
         if (System.currentTimeMillis() % 1000 < 550) {
-            float caret = query.isEmpty() ? 0 : Ui.width(Ui.fit(query, w - 24)) + 1;
+            float caret = query.isEmpty() ? 0 : Ui.width(displayedQuery()) + 1;
             Ui.rounded(g, x + 10 + caret, top + 14, 1, 10, 0, Ui.alpha(Ui.accentLight(), alpha));
         }
 
@@ -96,7 +99,7 @@ public final class NicoScreen extends AnimatedScreen {
             float hover = animate("row:" + module.id, inList && Ui.inside(mouseX, mouseY, x, y, w, ROW) ? 1 : 0, 16);
             Ui.rounded(g, x, y, w, ROW, 8, Ui.alpha(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, hover), alpha));
             Ui.text(g, Ui.fit(module.name, w - 80), x + 11, y + 6, Ui.alpha(Ui.TEXT, alpha));
-            Ui.text(g, module.category, x + 11, y + 17, Ui.alpha(Ui.MUTED, alpha));
+            Ui.text(g, Ui.fit(module.description(), w - 70), x + 11, y + 17, Ui.alpha(Ui.MUTED, alpha));
             boolean overStar = inList && Ui.inside(mouseX, mouseY, starX(x, w), y, 16, ROW);
             int star = module.favorite ? Ui.accentLight() : overStar ? Ui.TEXT : Ui.OFF;
             Ui.text(g, "★", starX(x, w) + 3, y + 11, Ui.alpha(star, alpha));
@@ -116,6 +119,16 @@ public final class NicoScreen extends AnimatedScreen {
     }
 
     private static int starX(int x, int w) { return x + w - 52; }
+
+    /** The search text as it is drawn; public so the game test can check what the player sees. */
+    public String displayedQuery() { return Ui.fit(query, contentWidth() - 24); }
+
+    public int[] categoryCenter(int index) { return new int[] {left() + 40, top() + ITEMS_TOP + index * (ITEM + ITEM_GAP) + ITEM / 2}; }
+
+    public int[] starCenter(ModuleManager.Module module) {
+        int[] center = toggleCenter(module);
+        return center == null ? null : new int[] {starX(contentX(), contentWidth()) + 8, center[1]};
+    }
 
     @Override public boolean mouseClicked(MouseButtonEvent e, boolean doubled) {
         if (isClosing()) return true;

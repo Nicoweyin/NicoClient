@@ -54,3 +54,9 @@
 - No Fog, No Vignette, No Hurt Camera and Dynamic FPS load without mixin errors, but their effects were not compared. Copy Coordinates, choosing a key in the menu, most individual settings, and HUD sizes other than 100% and 125% were not exercised.
 - `npm.cmd test`: 11 tests passed. `NicoClient-Setup-0.2.0.exe` was installed silently on this PC: the app window opened, the bundled mod matched the build, and the desktop and Start menu shortcuts existed. Uninstalling removed the app and desktop shortcut and left `%APPDATA%\NicoClient\mods` and `launcher_profiles.json` unchanged.
 - Not tested: the installer on another PC or Windows user, PLAY from the installed app, and SmartScreen behavior.
+
+## 2026-11-04: version 0.3.0
+- Found by this round's review and tests, and fixed: typed search text was invisible at normal window sizes, Inter was unreadable at GUI scale 1 (it now uses the Minecraft font there), and a status refresh overwrote the message after PLAY.
+- `gradle runClientGameTest` now also checks with real input: clicking a category and a favorite star, choosing a toggle key, using Copy Coordinates, choosing a setting, and that the typed search text is displayed. Scrolling calls the screen directly. Screenshots at GUI scales 1, 2 and 3 and of No Fog were reviewed by eye.
+- `npm.cmd test`: 16 tests passed, including launcher detection, profile state, profile icon and last-used date, the locked JAR message, and installed project lookup. The smoke test covers PLAY with a launcher that never ran and with no launcher; it uses mocked services and a temporary folder. A locked JAR is simulated with a read-only file.
+- Not tested: the profile icon and last-used date in the real official launcher, the installer on another PC, a real locked JAR, PLAY from the installed app, the Microsoft Store and older launcher paths on a real PC other than this one, No Hurt Camera, No Vignette, and Dynamic FPS's effect.

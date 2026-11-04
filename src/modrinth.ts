@@ -35,9 +35,18 @@ async function fileHash(file: string, algorithm: 'sha1' | 'sha512'): Promise<str
 }
 export async function searchMods(query: string): Promise<any[]> {
   if (typeof query !== 'string' || query.length > 120) throw new Error('Invalid search query.');
-  const params = new URLSearchParams({ query, limit: '24', facets: JSON.stringify([['project_type:mod'], ['categories:fabric'], [`versions:${GAME}`]]) });
+  const params = new URLSearchParams({ query, limit: '24', index: query.trim() ? 'relevance' : 'downloads', facets: JSON.stringify([['project_type:mod'], ['categories:fabric'], [`versions:${GAME}`]]) });
   const result = await json(`/search?${params}`);
   return (result.hits || []).map((hit: any) => ({ id: hit.project_id, title: hit.title, description: hit.description, downloads: hit.downloads, icon: typeof hit.icon_url === 'string' && hit.icon_url.startsWith('https://cdn.modrinth.com/') ? hit.icon_url : '' }));
+}
+// Which Modrinth projects are already in the folder, so search results can say so.
+export async function installedProjects(dir: string): Promise<string[]> {
+  const projects: string[] = [];
+  for (const item of await listMods(dir)) {
+    const version = await identify(path.join(dir, item.name)).catch(() => undefined);
+    if (version?.project_id) projects.push(version.project_id);
+  }
+  return projects;
 }
 export async function listMods(dir: string): Promise<{ name: string; enabled: boolean }[]> {
   await checkDirectory(dir);
