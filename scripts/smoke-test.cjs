@@ -68,10 +68,10 @@ app.whenReady().then(async () => {
     const results = await run(`(() => {
       const activePage = () => document.querySelector('.page.active')?.id;
       const pages = [activePage()];
-      for (const page of ['mods', 'cosmetics', 'settings', 'home']) { document.querySelector('[data-page="' + page + '"]').click(); pages.push(activePage()); }
-      return { pages, signInRemoved: !document.getElementById('sign-in') && !document.querySelector('[data-page="accounts"]') };
+      for (const page of ['mods', 'settings', 'home']) { document.querySelector('[data-page="' + page + '"]').click(); pages.push(activePage()); }
+      return { pages, signInRemoved: !document.getElementById('sign-in') && !document.querySelector('[data-page="accounts"]') && !document.querySelector('[data-page="cosmetics"]') };
     })()`);
-    assert.deepEqual(results, { pages: ['home', 'mods', 'cosmetics', 'settings', 'home'], signInRemoved: true });
+    assert.deepEqual(results, { pages: ['home', 'mods', 'settings', 'home'], signInRemoved: true });
     assert.equal(window.webContents.getTitle(), 'NicoClient');
     assert.equal(app.getName(), 'NicoClient');
     if (process.platform === 'win32') assert.equal(appUserModelId, 'dev.nicoweyin.nicoclient');

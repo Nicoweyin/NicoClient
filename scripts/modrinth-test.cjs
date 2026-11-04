@@ -5,7 +5,6 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { installMod, listMods, changeMod } = require('../dist/modrinth.js');
-const { loadCosmetics, saveCosmetics, defaults } = require('../dist/cosmetics.js');
 
 test('installs dependencies with hash verification, and manages mod files without overwrite', async () => {
   const base = path.join(__dirname, '..', '.smoke-test-data'); await fs.mkdir(base, { recursive: true });
@@ -42,16 +41,4 @@ test('rejects a corrupt download without leaving installed files', async () => {
   global.fetch = async input => String(input).startsWith('https://cdn.modrinth.com/') ? new Response('bad') : Response.json([{ id: 'root', project_id: 'root', game_versions: ['1.21.11'], loaders: ['fabric'], dependencies: [], files: [{ filename: 'root.jar', url: 'https://cdn.modrinth.com/root', primary: true, size: 3, hashes: { sha512: '0'.repeat(128) } }] }]);
   try { await assert.rejects(installMod(dir, 'root', () => {}), /hash/); assert.deepEqual(await fs.readdir(dir), []); }
   finally { global.fetch = original; await fs.rm(dir, { recursive: true, force: true }); }
-});
-
-test('cosmetics persist and reject malformed settings', async () => {
-  const base = path.join(__dirname, '..', '.smoke-test-data'); await fs.mkdir(base, { recursive: true });
-  const dir = await fs.mkdtemp(path.join(base, 'cosmetic-test-'));
-  try {
-    assert.deepEqual(await loadCosmetics(dir), defaults);
-    await saveCosmetics(dir, { ...defaults, color: '#112233', cape: 'classic' });
-    assert.equal((await loadCosmetics(dir)).cape, 'classic');
-    await assert.rejects(saveCosmetics(dir, { ...defaults, color: 'bad' }));
-    assert.equal((await loadCosmetics(dir)).color, '#112233');
-  } finally { await fs.rm(dir, { recursive: true, force: true }); }
 });

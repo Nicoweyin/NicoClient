@@ -3,7 +3,6 @@ import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { setupUpdater } from './updater';
 import { searchMods, listMods, installMod, changeMod, checkModUpdate, updateMod, installedProjects } from './modrinth';
-import { loadCosmetics, saveCosmetics } from './cosmetics';
 import { findOfficialLauncher, profileState, setupOfficialProfile } from './official-profile';
 import { spawn } from 'node:child_process';
 
@@ -143,8 +142,6 @@ void app.whenReady().then(() => {
     try { await updateMod(modsDirectory, name, (text, percent) => { if (!event.sender.isDestroyed()) event.sender.send('mods-progress', { name: text, percent }); }); }
     finally { modsBusy = false; }
   });
-  ipcMain.handle('cosmetics-load', event => { trusted(event); return loadCosmetics(path.join(gameDirectory, 'config')); });
-  ipcMain.handle('cosmetics-save', (event, settings: unknown) => { trusted(event); return saveCosmetics(path.join(gameDirectory, 'config'), settings); });
   createWindow();
   setupUpdater();
   app.on('activate', () => {

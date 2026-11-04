@@ -60,3 +60,6 @@
 - `gradle runClientGameTest` now also checks with real input: clicking a category and a favorite star, choosing a toggle key, using Copy Coordinates, choosing a setting, and that the typed search text is displayed. Scrolling calls the screen directly. Screenshots at GUI scales 1, 2 and 3 and of No Fog were reviewed by eye.
 - `npm.cmd test`: 16 tests passed, including launcher detection, profile state, profile icon and last-used date, the locked JAR message, and installed project lookup. The smoke test covers PLAY with a launcher that never ran and with no launcher; it uses mocked services and a temporary folder. A locked JAR is simulated with a read-only file.
 - Not tested: the profile icon and last-used date in the real official launcher, the installer on another PC, a real locked JAR, PLAY from the installed app, the Microsoft Store and older launcher paths on a real PC other than this one, No Hurt Camera, No Vignette, and Dynamic FPS's effect.
+
+## 2026-11-04: version 0.3.1
+- The Cosmetics page and its code and test were removed. `npm.cmd test` and the smoke test passed afterward, and the installer was installed, started and uninstalled on this PC.

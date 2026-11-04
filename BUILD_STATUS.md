@@ -1,13 +1,13 @@
 # Build status
 
 ## Launcher
-- Electron + TypeScript project with a dark blue/purple interface: Home, Mods, Cosmetics and Settings. Build and smoke test pass.
+- Electron + TypeScript project with a dark blue/purple interface: Home, Mods and Settings. Build and smoke test pass.
 - Home shows whether the official launcher and profile are ready and offers the launcher download when it is missing. The Mods page opens with popular mods and marks installed ones; required mods cannot be removed there.
 - PLAY adds the NicoClient profile to the official Minecraft Launcher, installs Fabric API and the NicoClient JAR into `%APPDATA%\NicoClient`, and opens the official launcher, which handles sign-in, game files, Java and memory. NicoClient's own Microsoft sign-in and game launch were removed on 2026-11-04 (last present in commit `4d31924`) after Minecraft Services returned HTTP 403. NicoClient handles no account tokens.
 - The owner reported on 2026-11-04 that playing through the official launcher with this profile works.
 - The launcher creates `%APPDATA%\NicoClient` and its `mods`, `config`, `resourcepacks`, `shaderpacks` and `logs` folders on startup; the NSIS installer does the same.
 - Modrinth search, dependency-aware installation with SHA-512 and size checks, listing, toggling, uninstalling, update checks and one-click updates with rollback are implemented. Unknown local mods and incompatibilities require manual review.
-- Free cosmetic preference controls persist locally; Fabric-side rendering is not implemented.
+- The Cosmetics page was removed on 2026-11-04 because its settings had no effect in the game (last present in commit `74c58be`).
 - GitHub `electron-updater` integration targets `Nicoweyin/NicoClient`. Updater delivery from a published release has not been tested; see `RELEASE.md` for signing limitations. Existing installers in `release/` and `release-corrected/` are stale.
 - Windows branding uses `NicoClient` for the app name, window title, packaged executable and NSIS shortcut, with AppUserModelID `dev.nicoweyin.nicoclient`.
 

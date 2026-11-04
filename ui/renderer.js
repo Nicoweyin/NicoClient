@@ -193,33 +193,3 @@ document.getElementById('open-game').addEventListener('click', async () => {
   try { await window.nicoClient.openGameFolder(); }
   catch { document.getElementById('mods-status').textContent = 'Could not open the game folder.'; }
 });
-
-const cosmeticFields = {
-  cape: ['none', 'classic', 'gradient'], wings: ['none', 'classic', 'glow'],
-  particles: ['none', 'sparkle', 'trail'], hud: ['default', 'minimal', 'compact'],
-  animation: ['none', 'gentle', 'dynamic'], preset: ['custom', 'violet', 'ocean']
-};
-const cosmeticContainer = document.getElementById('cosmetic-settings');
-for (const [name, options] of Object.entries(cosmeticFields)) {
-  const item = document.createElement('div'); item.className = 'cosmetic-item';
-  const label = document.createElement('label'); label.htmlFor = `cosmetic-${name}`; label.textContent = name[0].toUpperCase() + name.slice(1); item.append(label);
-  const select = document.createElement('select'); select.id = label.htmlFor;
-  for (const choice of options) { const option = document.createElement('option'); option.value = choice; option.textContent = choice; select.append(option); }
-  item.append(select); cosmeticContainer.append(item);
-}
-const colorItem = document.createElement('div'); colorItem.className = 'cosmetic-item';
-const colorLabel = document.createElement('label'); colorLabel.textContent = 'Custom color'; colorLabel.htmlFor = 'cosmetic-color';
-const color = document.createElement('input'); color.type = 'color'; color.id = colorLabel.htmlFor; colorItem.append(colorLabel, color); cosmeticContainer.append(colorItem);
-document.getElementById('cosmetic-preset').addEventListener('change', event => {
-  if (event.target.value === 'violet') color.value = '#a994ff';
-  if (event.target.value === 'ocean') color.value = '#54bfff';
-});
-color.addEventListener('input', () => { document.getElementById('cosmetic-preset').value = 'custom'; });
-window.nicoClient.loadCosmetics().then(settings => {
-  for (const [key, value] of Object.entries(settings)) document.getElementById(`cosmetic-${key}`).value = value;
-}).catch(() => { document.getElementById('cosmetic-status').textContent = 'Could not read saved preferences.'; });
-document.getElementById('save-cosmetics').addEventListener('click', async () => {
-  const settings = Object.fromEntries([...Object.keys(cosmeticFields), 'color'].map(key => [key, document.getElementById(`cosmetic-${key}`).value]));
-  try { await window.nicoClient.saveCosmetics(settings); document.getElementById('cosmetic-status').textContent = 'Preferences saved. In-game rendering is not implemented yet.'; }
-  catch { document.getElementById('cosmetic-status').textContent = 'Could not save preferences.'; }
-});

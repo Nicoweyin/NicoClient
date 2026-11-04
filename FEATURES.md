@@ -2,7 +2,7 @@
 
 PLAY sets up a NicoClient profile in the official Minecraft Launcher and opens it; the official launcher handles sign-in and starting the game. See `BUILD_STATUS.md` and `TEST_RESULTS.md`.
 
-The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fullbright, Reduced Particles, Trajectories, a Right Shift module screen and a draggable HUD editor. "Client test" means it ran in a real Minecraft 1.21.11 client through `gradle runClientGameTest` in a temporary single-player world, with screenshots reviewed by eye. The owner has also played through the official launcher and reported that it works. Multiplayer and long sessions have not been tested systematically. Zoom uses a configurable 2x/4x/8x factor and a rebindable hold key (default C). Fullbright uses configurable ambient-light levels; Trajectories has an optional impact marker. FPS retains its initially unbound separate toggle. Module state, favorites, settings and HUD positions are stored in `config/nicoclient.properties`. Other in-game items below remain planned. The launcher cosmetic controls do not render in Fabric. See `fabric-mod/LOCAL_TESTING.md` for testing and prediction limitations.
+The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fullbright, Reduced Particles, Trajectories, a Right Shift module screen and a draggable HUD editor. "Client test" means it ran in a real Minecraft 1.21.11 client through `gradle runClientGameTest` in a temporary single-player world, with screenshots reviewed by eye. The owner has also played through the official launcher and reported that it works. Multiplayer and long sessions have not been tested systematically. Zoom uses a configurable 2x/4x/8x factor and a rebindable hold key (default C). Fullbright uses configurable ambient-light levels; Trajectories has an optional impact marker. FPS retains its initially unbound separate toggle. Module state, favorites, settings and HUD positions are stored in `config/nicoclient.properties`. Other in-game items below remain planned. See `fabric-mod/LOCAL_TESTING.md` for testing and prediction limitations.
 
 ## HUD (15)
 1. [x] FPS counter (client test; on by default)
@@ -68,4 +68,4 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 - HUD: Server Info (client test in single-player), Day Counter, Light Level and Memory Usage (client test).
 - Performance: Dynamic FPS is added (loads in client test; lowering the frame rate while unfocused was not measured). Smart Animations, Entity Render Distance and Performance Presets remain planned.
 - Utility: Inventory Profiles, Screenshot Manager, Auto Reconnect.
-- Cosmetics: actual Fabric-side Capes, Wings, Particle Cosmetics, HUD Themes and GUI Themes. Launcher cosmetic controls are preferences, not in-game rendering.
+- Cosmetics: Capes, Wings, Particle Cosmetics and HUD or GUI Themes are not implemented; the launcher page that only stored preferences was removed.

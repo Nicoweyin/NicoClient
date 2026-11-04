@@ -22,9 +22,9 @@ Run `gradle build` in `fabric-mod/`, then `npm.cmd run package:win`, and send `r
 
 Right Shift opens the menu. Left click a module to switch it, right click to configure it, including a toggle key. **Settings** holds the accent color, HUD size, background and text color. **Edit HUD** moves HUD modules; right click one there to configure it.
 
-## Mods and cosmetics
+## Mods
 
-The Mods page searches Modrinth for Fabric 1.21.11, installs compatible versions and required dependencies with SHA-512 verification, and manages files in the isolated mods folder. Update checks identify newer versions and offer a one-click update that replaces the old file, restoring it if the update fails. Mod compatibility and dependencies cannot be guaranteed for unrecognized local files. Cosmetics preferences are stored locally, but in-game rendering is not implemented.
+The Mods page searches Modrinth for Fabric 1.21.11, installs compatible versions and required dependencies with SHA-512 verification, and manages files in the isolated mods folder. Update checks identify newer versions and offer a one-click update that replaces the old file, restoring it if the update fails. Mod compatibility and dependencies cannot be guaranteed for unrecognized local files.
 
 ## Releases
 

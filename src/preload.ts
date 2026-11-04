@@ -18,7 +18,5 @@ contextBridge.exposeInMainWorld('nicoClient', {
   installMod: (id: string) => ipcRenderer.invoke('mods-install', id),
   changeMod: (name: string, action: string) => ipcRenderer.invoke('mods-change', name, action),
   checkModUpdate: (name: string) => ipcRenderer.invoke('mods-update-check', name),
-  onModsProgress: (callback: (progress: unknown) => void) => ipcRenderer.on('mods-progress', (_event, progress) => callback(progress)),
-  loadCosmetics: () => ipcRenderer.invoke('cosmetics-load'),
-  saveCosmetics: (settings: unknown) => ipcRenderer.invoke('cosmetics-save', settings)
+  onModsProgress: (callback: (progress: unknown) => void) => ipcRenderer.on('mods-progress', (_event, progress) => callback(progress))
 });
