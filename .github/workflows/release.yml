@@ -42,12 +42,32 @@ jobs:
         working-directory: fabric-mod
         shell: bash
         run: |
-          # Show the reason in the run's summary, which can be read without signing in.
+          # A slow build is fine. Only 15 minutes without any new output counts as stuck.
+          # The reason goes in the run's annotations, which can be read without signing in.
+          report() {
+            tail -n 25 gradle.log | cut -c1-200 | sed -e 's/%/%25/g' | tr '\n' '~' | sed -e 's/~/%0A/g' > report.txt
+            echo "::error::$1%0A$(cat report.txt)"
+          }
+          gradle build --no-daemon --console=plain --info < /dev/null > gradle.log 2>&1 &
+          pid=$!
+          last=0
+          idle=0
+          while kill -0 "$pid" 2>/dev/null; do
+            sleep 60
+            size=$(wc -c < gradle.log)
+            if [ "$size" = "$last" ]; then idle=$((idle + 1)); else idle=0; fi
+            last=$size
+            echo "Gradle output: $size bytes, idle for $idle minutes"
+            if [ "$idle" -ge 15 ]; then
+              report "Gradle was stuck for 15 minutes. Last output:"
+              kill "$pid"
+              exit 1
+            fi
+          done
           status=0
-          gradle build --console=plain 2>&1 | tee gradle.log || status=$?
+          wait "$pid" || status=$?
           if [ "$status" -ne 0 ]; then
-            reason="$(grep -A6 'What went wrong' gradle.log | tr '\n' ' ' | cut -c1-600)"
-            echo "::error::${reason:-Gradle failed}"
+            report "Gradle failed. Last output:"
             exit 1
           fi
 
