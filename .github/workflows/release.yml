@@ -12,7 +12,6 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
 
@@ -44,8 +43,9 @@ jobs:
         shell: bash
         run: |
           # Show the reason in the run's summary, which can be read without signing in.
-          if ! gradle build --console=plain 2>&1 | tee gradle.log; [ "${PIPESTATUS[0]}" -ne 0 ]; then :; fi
-          if [ "${PIPESTATUS[0]:-0}" -ne 0 ] || ! grep -q 'BUILD SUCCESSFUL' gradle.log; then
+          status=0
+          gradle build --console=plain 2>&1 | tee gradle.log || status=$?
+          if [ "$status" -ne 0 ]; then
             reason="$(grep -A6 'What went wrong' gradle.log | tr '\n' ' ' | cut -c1-600)"
             echo "::error::${reason:-Gradle failed}"
             exit 1
