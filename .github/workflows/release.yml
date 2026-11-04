@@ -14,18 +14,18 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: '9.8.2'
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -41,7 +41,15 @@ jobs:
 
       - name: Build the Fabric mod
         working-directory: fabric-mod
-        run: gradle build --console=plain
+        shell: bash
+        run: |
+          # Show the reason in the run's summary, which can be read without signing in.
+          if ! gradle build --console=plain 2>&1 | tee gradle.log; [ "${PIPESTATUS[0]}" -ne 0 ]; then :; fi
+          if [ "${PIPESTATUS[0]:-0}" -ne 0 ] || ! grep -q 'BUILD SUCCESSFUL' gradle.log; then
+            reason="$(grep -A6 'What went wrong' gradle.log | tr '\n' ' ' | cut -c1-600)"
+            echo "::error::${reason:-Gradle failed}"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm ci
