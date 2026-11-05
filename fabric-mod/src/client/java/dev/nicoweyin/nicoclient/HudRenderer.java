@@ -50,6 +50,7 @@ public final class HudRenderer {
         if (client.player == null || client.options.hideGui) return;
         ModuleManager modules = NicoClientMod.MODULES;
         welcome(g);
+        Waypoints.render(g, client);
         if (modules.cps.enabled) sampleClicks(client);
         float scale = scale();
         float screenW = g.guiWidth() / scale, screenH = g.guiHeight() / scale;
@@ -64,10 +65,12 @@ public final class HudRenderer {
             else if (module == modules.armor) armor(g, client, x, y);
             else if (module == modules.potions) potions(g, x, y, width);
             else if (module == modules.pickups) Pickups.render(g, x, y, width);
+            else if (module == modules.target) target(g, client, x, y);
             else label(g, text(module), x, y);
         }
         g.pose().popMatrix();
         deathGuide(g, client);
+        ArmorWarning.render(g);
     }
 
     /** Tells new players once how to find the menu, then fades away. */
@@ -115,6 +118,7 @@ public final class HudRenderer {
         if (client.player == null) return false;
         if (module == m.potions) return !client.player.getActiveEffects().isEmpty();
         if (module == m.pickups) return Pickups.visible();
+        if (module == m.target) return Combat.target(client) != null;
         if (module == m.arrows) {
             if (m.arrowsAlways.on()) return true;
             ItemStack hand = client.player.getMainHandItem(), off = client.player.getOffhandItem();
@@ -132,6 +136,7 @@ public final class HudRenderer {
         ModuleManager modules = NicoClientMod.MODULES;
         if (module == modules.keys) return 52;
         if (module == modules.armor) return 72;
+        if (module == modules.target) return 130;
         if (module == modules.pickups && hasContent(module)) return Pickups.width();
         if (module == modules.potions) {
             int widest = Ui.width(module.name);
@@ -313,6 +318,22 @@ public final class HudRenderer {
             }
             offset += 18;
         }
+    }
+
+    /** Name, health bar and distance of the entity you look at or just hit. */
+    private static void target(GuiGraphics g, Minecraft client, int x, int y) {
+        var entity = Combat.target(client);
+        if (entity == null) return;
+        float health = entity.getHealth(), max = Math.max(1, entity.getMaxHealth()), ratio = Math.max(0, Math.min(1, health / max));
+        Ui.rounded(g, x, y, 130, 32, 6, background());
+        String distance = NicoClientMod.MODULES.targetDistance.on() ? String.format(Locale.ROOT, "%.1f m", entity.distanceTo(client.player)) : "";
+        Ui.text(g, Ui.fit(entity.getDisplayName().getString(), 120 - Ui.width(distance) - 6), x + 6, y + 5, textColor());
+        if (!distance.isEmpty()) Ui.text(g, distance, x + 124 - Ui.width(distance), y + 5, Ui.MUTED);
+        int bar = ratio > 0.5f ? Ui.mix(0xFFFFE27A, 0xFF6BF28C, (ratio - 0.5f) * 2) : Ui.mix(0xFFFF6B6B, 0xFFFFE27A, ratio * 2);
+        Ui.rounded(g, x + 6, y + 18, 118, 8, 4, 0xFF2E3252);
+        Ui.rounded(g, x + 6, y + 18, Math.max(8, 118 * ratio), 8, 4, bar);
+        String hp = String.format(Locale.ROOT, "%.1f / %.0f", health, max);
+        Ui.text(g, hp, x + 65 - Ui.width(hp) / 2f, y + 18, 0xFF0D0F1E);
     }
 
     /** Replaces the vanilla crosshair while Custom Crosshair is on. */

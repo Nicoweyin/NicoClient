@@ -41,6 +41,7 @@ public final class NicoClientMod implements ClientModInitializer {
     public void onInitializeClient() {
         MODULES.load();
         TrajectoryRenderer.register();
+        Waypoints.register();
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("nicoclient", "controls"));
         KeyMapping toggle = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.fps", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping gui = menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));
@@ -53,6 +54,7 @@ public final class NicoClientMod implements ClientModInitializer {
             applyOptions(client);
             Pickups.tick(client);
             Combat.tick(client);
+            ArmorWarning.tick(client);
             Freelook.tick(client);
             applyHitColor(client);
             applyQuietMode(client);
@@ -76,6 +78,14 @@ public final class NicoClientMod implements ClientModInitializer {
             if (module.hotkey != key || module == MODULES.zoom) continue;
             if (module == MODULES.copyCoords) {
                 if (module.enabled) copyCoordinates(client);
+                continue;
+            }
+            if (module == MODULES.waypoints) {
+                if (module.enabled) {
+                    Waypoints.Waypoint point = MODULES.waypointMarkBlock.on() ? Waypoints.markBlock(client, null) : null;
+                    if (point == null) point = Waypoints.add(client, null);
+                    client.player.displayClientMessage(Component.literal((point.block ? "Marked " : "Saved ") + point.name + " at " + point.coordinates()), true);
+                }
                 continue;
             }
             module.enabled = !module.enabled;

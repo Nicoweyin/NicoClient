@@ -17,13 +17,14 @@ public final class ModuleSettingsScreen extends AnimatedScreen {
     private final Screen parent;
     private final List<Object> rows = new ArrayList<>();
     private boolean capturing;
-    private static final Object ENABLED = "enabled", HOTKEY = "hotkey";
+    private static final Object ENABLED = "enabled", HOTKEY = "hotkey", MANAGE = "manage";
 
     public ModuleSettingsScreen(ModuleManager.Module module, Screen parent) {
         super(module.name);
         this.module = module;
         this.parent = parent;
         if (module != NicoClientMod.MODULES.client) { rows.add(ENABLED); rows.add(HOTKEY); }
+        if (module == NicoClientMod.MODULES.waypoints) rows.add(MANAGE);
         rows.addAll(module.settings);
     }
 
@@ -36,7 +37,7 @@ public final class ModuleSettingsScreen extends AnimatedScreen {
     private int rowRight() { return left() + panelWidth() - 8; }
 
     private boolean isZoom() { return module == NicoClientMod.MODULES.zoom; }
-    private String hotkeyLabel() { return module == NicoClientMod.MODULES.copyCoords ? "Copy key" : isZoom() ? "Hold key" : "Toggle key"; }
+    private String hotkeyLabel() { return module == NicoClientMod.MODULES.copyCoords ? "Copy key" : module == NicoClientMod.MODULES.waypoints ? "Add key" : isZoom() ? "Hold key" : "Toggle key"; }
 
     private String hotkeyName() {
         if (capturing) return "Press a key...";
@@ -51,7 +52,7 @@ public final class ModuleSettingsScreen extends AnimatedScreen {
         return new int[] {Math.round(segmentX(setting, option)) + segmentWidth(setting.labels[option]) / 2, Math.round(rowY(rows.indexOf(setting))) + ROW / 2};
     }
 
-    public static final Object HOTKEY_ROW = HOTKEY;
+    public static final Object HOTKEY_ROW = HOTKEY, MANAGE_ROW = MANAGE;
 
     private static int segmentWidth(String label) { return Math.max(26, Ui.width(label) + 12); }
 
@@ -76,12 +77,16 @@ public final class ModuleSettingsScreen extends AnimatedScreen {
         for (int i = 0; i < rows.size(); i++) {
             Object row = rows.get(i);
             float y = rowY(i);
-            boolean clickable = row == ENABLED || row == HOTKEY || (row instanceof ModuleManager.Setting setting && setting.isSwitch());
+            boolean clickable = row == ENABLED || row == HOTKEY || row == MANAGE || (row instanceof ModuleManager.Setting setting && setting.isSwitch());
             float hover = animate("row:" + i, clickable && !isClosing() && Ui.inside(mouseX, mouseY, left + 8, y, panelW - 16, ROW) ? 1 : 0, 16);
             Ui.rounded(g, left + 8, y, panelW - 16, ROW, 7, Ui.alpha(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, hover), alpha));
             if (row == ENABLED) {
                 Ui.text(g, "Enabled", left + 18, y + 8, Ui.alpha(Ui.TEXT, alpha));
                 Ui.toggle(g, rowRight() - 32, y + 6, animate("enabled", module.enabled ? 1 : 0, 16), alpha);
+            } else if (row == MANAGE) {
+                Ui.text(g, "Manage waypoints", left + 18, y + 8, Ui.alpha(Ui.TEXT, alpha));
+                String count = minecraft.player == null ? "" : Waypoints.here(minecraft).size() + " saved  \u203a";
+                Ui.text(g, count, rowRight() - 8 - Ui.width(count), y + 8, Ui.alpha(Ui.mix(Ui.MUTED, Ui.TEXT, hover), alpha));
             } else if (row == HOTKEY) {
                 Ui.text(g, hotkeyLabel(), left + 18, y + 8, Ui.alpha(Ui.TEXT, alpha));
                 String name = hotkeyName();
@@ -125,6 +130,7 @@ public final class ModuleSettingsScreen extends AnimatedScreen {
             Object row = rows.get(i);
             if (row == ENABLED) module.enabled = !module.enabled;
             else if (row == HOTKEY) capturing = true;
+            else if (row == MANAGE) { Ui.click(); closeTo(new WaypointScreen(this)); return true; }
             else if (row instanceof ModuleManager.Setting setting) {
                 if (setting.isSwitch()) setting.flip();
                 else {

@@ -63,7 +63,12 @@ public final class ModuleManager {
         Map.entry("hitcolor", "Color of mobs and players when hit"),
         Map.entry("freelook", "Hold a key to look around you"),
         Map.entry("quiet", "Turns all game sounds down at once"),
-        Map.entry("reconnect", "Rejoin a server after a disconnect"));
+        Map.entry("reconnect", "Rejoin a server after a disconnect"),
+        Map.entry("waypoints", "Save places and see them in the world"),
+        Map.entry("target", "Health and distance of who you fight"),
+        Map.entry("armorwarn", "Warns before armor or tools break"),
+        Map.entry("tabping", "Ping in milliseconds in the player list"),
+        Map.entry("nopumpkin", "Clear view with a pumpkin on your head"));
 
     /** One configurable value of a module, shown as switch or segmented choice. */
     public static final class Setting {
@@ -146,6 +151,7 @@ public final class ModuleManager {
     public final HudModule combo = new HudModule("combo", "Combo Counter", false, SECOND_COLUMN, 5 + ROW * 8, 15);
     public final HudModule food = new HudModule("food", "Food & Saturation", false, 5, FIRST_ROW + ROW * 5, 15);
     public final HudModule arrows = new HudModule("arrows", "Arrow Counter", false, 5, FIRST_ROW + ROW * 6, 15);
+    public final HudModule target = new HudModule("target", "Target HUD", false, THIRD_COLUMN, 5 + ROW * 11, 32);
     public final Module zoom = new Module("zoom", "Zoom", "Visuals", true);
     public final Module crosshair = new Module("crosshair", "Custom Crosshair", "Visuals");
     public final Module lowFire = new Module("lowfire", "Low Fire", "Visuals");
@@ -161,9 +167,13 @@ public final class ModuleManager {
     public final Module clearWater = new Module("clearwater", "Clear Water", "Visuals");
     public final Module hitColor = new Module("hitcolor", "Hit Color", "Visuals");
     public final Module freelook = new Module("freelook", "Freelook", "Visuals");
+    public final Module noPumpkin = new Module("nopumpkin", "No Pumpkin", "Visuals");
+    public final Module tabPing = new Module("tabping", "Tab Ping", "Visuals");
     public final Module chatHistory = new Module("chathistory", "Chat History", "Utility");
     public final Module quietMode = new Module("quiet", "Quiet Mode", "Utility");
     public final Module autoReconnect = new Module("reconnect", "Auto Reconnect", "Utility");
+    public final Module waypoints = new Module("waypoints", "Waypoints", "Utility");
+    public final Module armorWarning = new Module("armorwarn", "Armor Warning", "Utility");
     public final Module toggleSprint = new Module("togglesprint", "Toggle Sprint", "Utility");
     public final Module toggleSneak = new Module("togglesneak", "Toggle Sneak", "Utility");
     public final Module copyCoords = new Module("copycoords", "Copy Coordinates", "Utility");
@@ -211,6 +221,13 @@ public final class ModuleManager {
     public final Setting hitColorValue = hitColor.choice("color", "Color", 0, new String[] {"Accent", "Blue", "Green", "White"}, 0, 1, 2, 3);
     public final Setting quietVolume = quietMode.choice("volume", "Volume", 25, new String[] {"0%", "10%", "25%", "50%"}, 0, 10, 25, 50);
     public final Setting reconnectDelay = autoReconnect.choice("delay", "Reconnect on its own", 0, new String[] {"Off", "5s", "10s", "30s"}, 0, 5, 10, 30);
+    public final Setting waypointDistance = waypoints.toggle("distance", "Show distance", true);
+    public final Setting waypointMarkBlock = waypoints.toggle("markblock", "Add key marks the looked-at block", true);
+    public final Setting targetDistance = target.toggle("distance", "Show distance", true);
+    public final Setting armorLimit = armorWarning.choice("limit", "Warn below", 10, new String[] {"5%", "10%", "20%"}, 5, 10, 20);
+    public final Setting armorSound = armorWarning.toggle("sound", "Play a sound", true);
+    public final Setting armorHeld = armorWarning.toggle("held", "Include held tool", true);
+    public final Setting noPowderSnow = noPumpkin.toggle("snow", "Also powder snow frost", true);
     public final Setting dynamicFpsLimit = dynamicFps.choice("limit", "Unfocused limit", 15, new String[] {"5", "15", "30"}, 5, 15, 30);
 
     /** Settings for the whole client, opened from the sidebar. Not shown in the module list. */
@@ -223,8 +240,8 @@ public final class ModuleManager {
 
     /** False until the first-run hint about the menu key has been shown. */
     public boolean welcomed;
-    public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups, reach, combo, food, arrows);
-    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, blockOutline, staticFov, clearWater, hitColor, freelook, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, chatHistory, quietMode, autoReconnect, particles, dynamicFps, entityDistance)).toList();
+    public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups, reach, combo, food, arrows, target);
+    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, blockOutline, staticFov, clearWater, hitColor, freelook, noPumpkin, tabPing, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, chatHistory, quietMode, autoReconnect, waypoints, armorWarning, particles, dynamicFps, entityDistance)).toList();
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
     private final Properties properties = new Properties();
 

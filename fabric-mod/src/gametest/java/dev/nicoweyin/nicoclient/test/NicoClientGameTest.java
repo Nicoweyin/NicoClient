@@ -9,6 +9,10 @@ import dev.nicoweyin.nicoclient.Pickups;
 import dev.nicoweyin.nicoclient.Combat;
 import dev.nicoweyin.nicoclient.Freelook;
 import dev.nicoweyin.nicoclient.Reconnect;
+import dev.nicoweyin.nicoclient.ArmorWarning;
+import dev.nicoweyin.nicoclient.WaypointScreen;
+import dev.nicoweyin.nicoclient.Waypoints;
+import net.minecraft.client.gui.GuiGraphics;
 import dev.nicoweyin.nicoclient.mixin.OverlayTextureAccessor;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.CameraType;
@@ -542,6 +546,97 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("nicoclient-14f-reconnect");
             context.setScreen(() -> null);
             context.runOnClient(client -> { m.autoReconnect.enabled = false; m.reconnectDelay.set(0); Reconnect.lastServer = null; m.save(); });
+
+            // Waypoints, Target HUD, Armor Warning, Tab Ping and No Pumpkin.
+            world.getServer().runCommand("gamemode survival @a");
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 20");
+            world.getServer().runCommand("execute at @a run fill ~-4 ~-1 ~-4 ~4 ~-1 ~10 minecraft:stone");
+            world.getServer().runCommand("execute at @a run fill ~-4 ~ ~-4 ~4 ~4 ~10 minecraft:air");
+            world.getServer().runCommand("execute at @a run setblock ~ ~ ~3 minecraft:chest");
+            world.getServer().runCommand("execute at @a run summon minecraft:pig ~2 ~ ~5 {NoAI:1b}");
+            context.waitTicks(15);
+            context.runOnClient(client -> {
+                m.waypoints.enabled = true;
+                Waypoints.here(client).forEach(Waypoints::remove);
+                check(Waypoints.lookedAtBlock(client) != null && client.level.getBlockState(Waypoints.lookedAtBlock(client)).is(net.minecraft.world.level.block.Blocks.CHEST), "looking at the chest");
+            });
+            context.setScreen(() -> new WaypointScreen(null));
+            context.waitTicks(15);
+            context.getInput().typeChars("Base");
+            context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(Waypoints.here(client).stream().anyMatch(p -> p.name.equals("Base") && !p.block), "typing a name and Enter saves a waypoint"));
+            int[] markButton = context.computeOnClient(client -> ((WaypointScreen) client.screen).markCenter());
+            moveTo(context, markButton[0], markButton[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(5);
+            context.runOnClient(client -> check(Waypoints.here(client).stream().anyMatch(p -> p.name.equals("Chest") && p.block), "Mark block marks the chest: " + Waypoints.here(client).stream().map(p -> p.name).toList()));
+            context.takeScreenshot("nicoclient-15a-waypoint-screen");
+            int[] deleteButton = context.computeOnClient(client -> ((WaypointScreen) client.screen).deleteCenter(0));
+            moveTo(context, deleteButton[0], deleteButton[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(5);
+            context.runOnClient(client -> check(Waypoints.here(client).size() == 1 && Waypoints.here(client).get(0).name.equals("Chest"), "Delete removes Base"));
+            context.setScreen(() -> null);
+            context.waitTicks(10);
+            context.runOnClient(client -> {
+                var chest = Waypoints.here(client).get(0);
+                float[] spot = Waypoints.screenPosition(client, chest, client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight());
+                float cx = client.getWindow().getGuiScaledWidth() / 2f, cy = client.getWindow().getGuiScaledHeight() / 2f;
+                check(spot != null && Math.abs(spot[0] - cx) < 30 && Math.abs(spot[1] - cy) < 45, "the chest marker sits near the crosshair: " + java.util.Arrays.toString(spot) + " center " + cx + "," + cy);
+                m.waypoints.hotkey = GLFW.GLFW_KEY_N;
+            });
+            context.getInput().pressKey(GLFW.GLFW_KEY_N);
+            context.waitTicks(3);
+            context.runOnClient(client -> {
+                check(Waypoints.here(client).size() == 2 && Waypoints.here(client).get(1).block, "the Add key marks the looked-at block");
+                Waypoints.remove(Waypoints.here(client).get(1));
+                m.waypoints.hotkey = -1;
+            });
+
+            // Target HUD shows the pig just hit; Armor Warning reacts to a nearly broken helmet.
+            world.getServer().runCommand("item replace entity @a armor.head with minecraft:iron_helmet[damage=160]");
+            context.waitTicks(5);
+            context.runOnClient(client -> {
+                m.target.enabled = true; m.armorWarning.enabled = true;
+                Pig pig = null;
+                for (var entity : client.level.entitiesForRendering()) if (entity instanceof Pig found) pig = found;
+                client.gameMode.attack(client.player, pig);
+                check(dev.nicoweyin.nicoclient.Combat.target(client) == pig, "Target HUD follows the pig you hit");
+            });
+            context.waitTicks(3);
+            context.runOnClient(client -> check(ArmorWarning.warning() != null && ArmorWarning.warning().startsWith("Helmet at 3%"), "Armor Warning names the helmet: " + ArmorWarning.warning()));
+            context.takeScreenshot("nicoclient-15b-waypoint-world-target-armor");
+            context.runOnClient(client -> { m.target.enabled = false; m.armorWarning.enabled = false; });
+            world.getServer().runCommand("kill @e[type=minecraft:pig]");
+
+            // No Pumpkin: compare the view with a carved pumpkin on the head.
+            world.getServer().runCommand("item replace entity @a armor.head with minecraft:carved_pumpkin");
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-15c-pumpkin-normal");
+            context.runOnClient(client -> m.noPumpkin.enabled = true);
+            context.waitTicks(3);
+            context.takeScreenshot("nicoclient-15d-no-pumpkin");
+            context.runOnClient(client -> m.noPumpkin.enabled = false);
+            world.getServer().runCommand("item replace entity @a armor.head with minecraft:air");
+
+            // Tab Ping: the player list, drawn on a plain screen because single player hides it.
+            context.runOnClient(client -> m.tabPing.enabled = true);
+            context.setScreen(() -> new net.minecraft.client.gui.screens.Screen(Component.literal("Tab list")) {
+                @Override public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
+                    var mc = net.minecraft.client.Minecraft.getInstance();
+                    mc.gui.getTabList().render(g, g.guiWidth(), mc.level.getScoreboard(), null);
+                }
+            });
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-15e-tab-ping");
+            context.setScreen(() -> null);
+            context.runOnClient(client -> {
+                m.tabPing.enabled = false; m.waypoints.enabled = false;
+                Waypoints.here(client).forEach(Waypoints::remove);
+                m.save();
+            });
+            world.getServer().runCommand("gamemode creative @a");
 
             // The menu at the other GUI scales players really use.
             for (int scale : new int[] {1, 3}) {

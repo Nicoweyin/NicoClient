@@ -44,7 +44,7 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 33. [ ] Screenshot notification
 34. [x] Chat timestamps (client test)
 35. [x] Chat history extension, 500 to 5000 messages (stored count checked in client test)
-36. [ ] Waypoint management
+36. [x] Waypoint management: save where you stand or mark the looked-at block (colored box), name, recolor, hide and delete in a waypoint screen; markers with distance in the world (client test with real typing and clicks)
 37. [x] Copy Coordinates (key press and clipboard checked in client test)
 38. [ ] Inventory search
 39. [x] Item pickup notifications as a movable HUD module (client test with /give; picking items off the ground not exercised)
@@ -69,3 +69,4 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 - Performance: Dynamic FPS is added (loads in client test; lowering the frame rate while unfocused was not measured). Entity Distance hides entities beyond 16 to 64 blocks, players only when chosen (which entities are hidden checked in client test; the FPS gain was not measured). Smart Animations and Performance Presets remain planned.
 - Utility: Death Position writes where you died into chat, can copy it, and after respawning points the way back with an arrow and the distance until you arrive (client test). Auto Reconnect adds a Reconnect button after a disconnect, with an optional countdown (button and countdown checked in client test; a real reconnect to a server was not tested). Inventory Profiles and Screenshot Manager remain planned.
 - Cosmetics: Capes, Wings, Particle Cosmetics and HUD or GUI Themes are not implemented; the launcher page that only stored preferences was removed.
+- Added in 0.5.0 as well: Target HUD, Armor Warning, Tab Ping (milliseconds in the player list) and No Pumpkin (client test; Tab Ping seen in single player only).

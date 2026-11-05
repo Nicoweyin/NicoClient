@@ -12,12 +12,14 @@ public final class Combat {
     private static double reach;
     private static long lastHit;
     private static int combo, lastHurtTime;
+    private static LivingEntity lastTarget;
 
     private Combat() {}
 
     /** Called when you attack an entity. Reach is measured from your eyes to the closest point of its hitbox. */
     public static void onAttack(LocalPlayer player, Entity target) {
-        if (!(target instanceof LivingEntity)) return;
+        if (!(target instanceof LivingEntity living)) return;
+        lastTarget = living;
         long now = System.currentTimeMillis();
         reach = Math.sqrt(target.getBoundingBox().distanceToSqr(player.getEyePosition()));
         combo = now - lastHit > COMBO_TIMEOUT ? 1 : combo + 1;
@@ -30,6 +32,15 @@ public final class Combat {
         if (player == null) { combo = 0; lastHurtTime = 0; return; }
         if (player.hurtTime > lastHurtTime) combo = 0;
         lastHurtTime = player.hurtTime;
+    }
+
+    /** The entity under the crosshair, or the last one you hit in the past few seconds. */
+    public static LivingEntity target(Minecraft client) {
+        if (client.player == null) return null;
+        if (client.crosshairPickEntity instanceof LivingEntity looked && looked.isAlive()) return looked;
+        if (lastTarget != null && lastTarget.isAlive() && lastTarget.level() == client.level
+                && System.currentTimeMillis() - lastHit < REACH_SHOWN && lastTarget.distanceTo(client.player) < 64) return lastTarget;
+        return null;
     }
 
     public static String reachText() {
