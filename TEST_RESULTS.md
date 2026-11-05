@@ -67,3 +67,9 @@
 ## 2026-11-04: version 0.3.2, automatic updates
 - Real update test on this PC with a local server instead of GitHub: the installed 0.3.2 downloaded a 9.9.9 test build on its own, showed the banner on Home, and after clicking "Restart and update" was replaced by 9.9.9 and restarted. `latest.yml`, the blockmaps and the installer were served by a local server, and the test version was removed afterward.
 - Not tested: downloading from a real GitHub release, an update on another PC, an update that installs on the next start without the button, and the check every four hours.
+
+## 2026-11-04: first GitHub releases
+- Real update test on this PC: an installed, locally built 0.3.2 found release 0.3.5 on GitHub, downloaded it on its own and, after clicking "Restart and update", ran as 0.3.5. The test installation was removed afterward; mods and launcher profiles were unchanged.
+- GitHub Actions needs Java 25 for the mod build (it failed with Java 21; the exact reason was not read). Builds also hung while Gradle's output went through a pipe, which did not reproduce locally, so the cause is unconfirmed; writing to a file without a daemon took about 4 minutes. A build now stops only after 15 minutes without new output and reports the last lines.
+- 0.3.4 was published as two broken releases because electron-builder uploaded files concurrently; 0.3.5 publishes with one command.
+- Not tested: an update on another PC, an update that installs on quit without the button, and the check every four hours.

@@ -16,7 +16,7 @@ Run `npm.cmd test` for the launcher tests and `gradle runClientGameTest` in `fab
 
 ## Sharing with friends
 
-Run `gradle build` in `fabric-mod/`, then `npm.cmd run package:win`, and send `release/NicoClient-Setup-<version>.exe`. It installs for the current Windows user and adds Start menu and desktop shortcuts. Friends need the official Minecraft Launcher with their own Minecraft Java account. The installer is unsigned, so Windows SmartScreen shows a warning: choose **More info**, then **Run anyway**.
+Run `gradle build` in `fabric-mod/`, then `npm.cmd run package:win`, and send `release/NicoClient-Setup-<version>.exe`. It installs for the current Windows user and adds Start menu and desktop shortcuts. Friends can also download the newest installer from https://github.com/Nicoweyin/NicoClient/releases/latest. They need the official Minecraft Launcher with their own Minecraft Java account. The installer is unsigned, so Windows SmartScreen shows a warning: choose **More info**, then **Run anyway**.
 
 Published releases come from GitHub Actions: see `RELEASE.md`.
 
@@ -30,6 +30,6 @@ The Mods page searches Modrinth for Fabric 1.21.11, installs compatible versions
 
 ## Releases
 
-An unsigned Windows installer and `latest.yml` can be built with `npm.cmd run package:win` and are written to `release`; no upload occurs. Installed builds download updates from GitHub Releases on their own and install them on restart. That worked in a local test, but no release is published yet, so nothing arrives until one is. See `RELEASE.md` for signing limitations and the approval-gated release process.
+An unsigned Windows installer and `latest.yml` can be built with `npm.cmd run package:win` and are written to `release`; no upload occurs. Installed builds download updates from GitHub Releases on their own and install them on restart. That worked in a real test from GitHub on this PC. Releases are published from version tags; see `RELEASE.md`. See `RELEASE.md` for signing limitations and the approval-gated release process.
 
 See `BUILD_STATUS.md`, `FEATURES.md`, `TEST_RESULTS.md`, and `RESUME.md` for progress.
