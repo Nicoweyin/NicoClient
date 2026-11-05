@@ -14,7 +14,7 @@
 ## Fabric mod
 - Client-only project targeting Minecraft 1.21.11, Fabric Loader 0.20.1 and Fabric API 0.141.6+1.21.11 with official Mojang mappings. The remapped JAR is `fabric-mod/build/libs/nicoclient-fabric-0.1.0.jar`.
 - The in-game menu, settings screen, HUD and HUD editor use a custom rounded, animated look (`Ui`, `AnimatedScreen`) instead of vanilla buttons. Its text uses the bundled Inter font.
-- Every module can be configured by right click, with per-module settings and toggle keys. Client-wide settings cover accent color and HUD appearance. The mod has 33 modules; see `FEATURES.md`.
+- Every module can be configured by right click, with per-module settings and toggle keys. Client-wide settings cover accent color and HUD appearance. The mod has 38 modules; see `FEATURES.md`.
 - `gradle runClientGameTest` runs the mod in a real client with a temporary world. See `FEATURES.md` for what it covers and `fabric-mod/LOCAL_TESTING.md` for manual tests.
 
 ## Environment

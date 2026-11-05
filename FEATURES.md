@@ -36,9 +36,9 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 27. [x] No Vignette (loads in client test; effect not compared)
 
 ## Utilities (13)
-28. [ ] Auto sprint
+28. [x] Auto sprint (sprinting while walking forward checked in client test)
 29. [x] Toggle sneak, through Minecraft's own option (option change checked in client test)
-30. [ ] Tool protection
+30. [x] Tool protection, stops mining at a chosen durability left (refusal and release checked in client test)
 31. [x] Toggle sprint, through Minecraft's own option (option change checked in client test)
 32. [ ] Screenshot shortcut
 33. [ ] Screenshot notification
@@ -47,7 +47,7 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 36. [ ] Waypoint management
 37. [x] Copy Coordinates (key press and clipboard checked in client test)
 38. [ ] Inventory search
-39. [ ] Item pickup notifications
+39. [x] Item pickup notifications as a movable HUD module (client test with /give; picking items off the ground not exercised)
 40. [ ] Sound volume shortcuts
 
 ## Client Settings (10)
@@ -66,6 +66,6 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 
 - Visuals: Trajectories for bow, snowballs, eggs, ender pearls and splash potions with optional impact marker (path draws in client test for a snowball; accuracy not compared with real throws); Hit Color, Block Outline, Clear Water and FOV Changer remain planned.
 - HUD: Server Info (client test in single-player), Day Counter, Light Level and Memory Usage (client test).
-- Performance: Dynamic FPS is added (loads in client test; lowering the frame rate while unfocused was not measured). Smart Animations, Entity Render Distance and Performance Presets remain planned.
-- Utility: Inventory Profiles, Screenshot Manager, Auto Reconnect.
+- Performance: Dynamic FPS is added (loads in client test; lowering the frame rate while unfocused was not measured). Entity Distance hides entities beyond 16 to 64 blocks, players only when chosen (which entities are hidden checked in client test; the FPS gain was not measured). Smart Animations and Performance Presets remain planned.
+- Utility: Death Position writes where you died into chat and can copy it (client test). Inventory Profiles, Screenshot Manager and Auto Reconnect remain planned.
 - Cosmetics: Capes, Wings, Particle Cosmetics and HUD or GUI Themes are not implemented; the launcher page that only stored preferences was removed.

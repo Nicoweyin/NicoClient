@@ -46,7 +46,12 @@ public final class ModuleManager {
         Map.entry("copycoords", "Set a key to copy your position"),
         Map.entry("chattime", "Adds the time to chat messages"),
         Map.entry("particles", "Fewer particles for more FPS"),
-        Map.entry("dynamicfps", "Saves power while in the background"));
+        Map.entry("dynamicfps", "Saves power while in the background"),
+        Map.entry("pickups", "Shows the items you pick up"),
+        Map.entry("autosprint", "Sprints whenever you walk forward"),
+        Map.entry("toolprotect", "Stops mining before a tool breaks"),
+        Map.entry("deathpos", "Tells you where you died"),
+        Map.entry("entitydistance", "Hides far away mobs for more FPS"));
 
     /** One configurable value of a module, shown as switch or segmented choice. */
     public static final class Setting {
@@ -124,6 +129,7 @@ public final class ModuleManager {
     public final HudModule memory = new HudModule("memory", "Memory Usage", false, THIRD_COLUMN, 5, 15);
     public final HudModule server = new HudModule("server", "Server Info", false, THIRD_COLUMN, 5 + ROW, 15);
     public final HudModule potions = new HudModule("potions", "Potion Effects", false, THIRD_COLUMN, 5 + ROW * 2, 15);
+    public final HudModule pickups = new HudModule("pickups", "Item Pickups", false, THIRD_COLUMN, 5 + ROW * 5, 18);
     public final Module zoom = new Module("zoom", "Zoom", "Visuals", true);
     public final Module crosshair = new Module("crosshair", "Custom Crosshair", "Visuals");
     public final Module lowFire = new Module("lowfire", "Low Fire", "Visuals");
@@ -137,6 +143,10 @@ public final class ModuleManager {
     public final Module toggleSprint = new Module("togglesprint", "Toggle Sprint", "Utility");
     public final Module toggleSneak = new Module("togglesneak", "Toggle Sneak", "Utility");
     public final Module copyCoords = new Module("copycoords", "Copy Coordinates", "Utility");
+    public final Module autoSprint = new Module("autosprint", "Auto Sprint", "Utility");
+    public final Module toolProtect = new Module("toolprotect", "Tool Protection", "Utility");
+    public final Module deathPos = new Module("deathpos", "Death Position", "Utility");
+    public final Module entityDistance = new Module("entitydistance", "Entity Distance", "Performance");
     public final Module chatTime = new Module("chattime", "Chat Timestamps", "Utility");
     public final Module particles = new Module("particles", "Reduced Particles", "Performance");
     public final Module dynamicFps = new Module("dynamicfps", "Dynamic FPS", "Performance");
@@ -162,6 +172,11 @@ public final class ModuleManager {
     public final Setting crosshairColor = crosshair.choice("color", "Color", 0, new String[] {"White", "Accent", "Green", "Red"}, 0, 1, 2, 3);
     public final Setting timeOfDay = customTime.choice("value", "Time", 6000, new String[] {"Morning", "Noon", "Sunset", "Night"}, 1000, 6000, 12500, 18000);
     public final Setting chat24 = chatTime.toggle("seconds", "Show seconds", false);
+    public final Setting pickupSeconds = pickups.choice("seconds", "Show for", 3, new String[] {"2s", "3s", "5s"}, 2, 3, 5);
+    public final Setting toolLimit = toolProtect.choice("limit", "Stop at durability", 5, new String[] {"2", "5", "10", "25"}, 2, 5, 10, 25);
+    public final Setting deathCopy = deathPos.toggle("copy", "Copy to clipboard", false);
+    public final Setting entityRange = entityDistance.choice("range", "Distance", 48, new String[] {"16", "32", "48", "64"}, 16, 32, 48, 64);
+    public final Setting entityPlayers = entityDistance.toggle("players", "Also hide players", false);
     public final Setting dynamicFpsLimit = dynamicFps.choice("limit", "Unfocused limit", 15, new String[] {"5", "15", "30"}, 5, 15, 30);
 
     /** Settings for the whole client, opened from the sidebar. Not shown in the module list. */
@@ -174,8 +189,8 @@ public final class ModuleManager {
 
     /** False until the first-run hint about the menu key has been shown. */
     public boolean welcomed;
-    public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions);
-    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, toggleSprint, toggleSneak, copyCoords, chatTime, particles, dynamicFps)).toList();
+    public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups);
+    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, particles, dynamicFps, entityDistance)).toList();
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
     private final Properties properties = new Properties();
 

@@ -5,6 +5,11 @@ import dev.nicoweyin.nicoclient.ModuleManager;
 import dev.nicoweyin.nicoclient.ModuleSettingsScreen;
 import dev.nicoweyin.nicoclient.NicoClientMod;
 import dev.nicoweyin.nicoclient.NicoScreen;
+import dev.nicoweyin.nicoclient.Pickups;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.level.block.Blocks;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -240,7 +245,7 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                 screen.mouseScrolled(200, 200, 0, -100);
             });
             context.waitTicks(25);
-            context.runOnClient(client -> check(((NicoScreen) client.screen).toggleCenter(m.dynamicFps) != null, "scrolling reaches the last module"));
+            context.runOnClient(client -> check(((NicoScreen) client.screen).toggleCenter(m.entityDistance) != null, "scrolling reaches the last module"));
             context.takeScreenshot("nicoclient-10b-scrolled");
             context.setScreen(() -> null);
 
@@ -284,6 +289,82 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("nicoclient-11b-no-fog");
             context.runOnClient(client -> m.noFog.enabled = false);
             context.waitTick();
+
+            // Utility modules added in 0.4.0, checked in survival with real effects.
+            world.getServer().runCommand("time set noon");
+            world.getServer().runCommand("gamemode survival @a");
+            world.getServer().runCommand("effect clear @a");
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 0");
+            world.getServer().runCommand("execute at @a run fill ~-2 ~-1 ~-2 ~2 ~-1 ~30 minecraft:stone");
+            world.getServer().runCommand("execute at @a run fill ~-2 ~ ~-2 ~2 ~3 ~30 minecraft:air");
+            context.waitTicks(10);
+
+            // Item Pickups lists what arrives while no menu is open.
+            context.runOnClient(client -> { m.pickups.enabled = true; m.save(); });
+            context.waitTicks(2);
+            world.getServer().runCommand("give @a minecraft:cobblestone 12");
+            world.getServer().runCommand("give @a minecraft:oak_log 3");
+            context.waitTicks(4);
+            context.runOnClient(client -> check(Pickups.visible() && m.pickups.enabled, "picked up items are listed"));
+            context.takeScreenshot("nicoclient-13a-pickups");
+
+            // Auto Sprint starts sprinting while walking forward.
+            context.runOnClient(client -> { m.autoSprint.enabled = true; client.player.setSprinting(false); });
+            context.getInput().holdKey(GLFW.GLFW_KEY_W);
+            context.waitTicks(8);
+            context.runOnClient(client -> check(client.player.isSprinting(), "Auto Sprint sprints while walking forward"));
+            context.getInput().releaseKey(GLFW.GLFW_KEY_W);
+            context.waitTicks(10);
+            context.runOnClient(client -> { m.autoSprint.enabled = false; client.player.setSprinting(false); });
+
+            // Tool Protection refuses to mine with a nearly broken tool and allows it again when off.
+            world.getServer().runCommand("item replace entity @a weapon.mainhand with minecraft:diamond_pickaxe[damage=1559]");
+            world.getServer().runCommand("execute at @a run setblock ~ ~ ~2 minecraft:stone");
+            context.waitTicks(5);
+            context.runOnClient(client -> {
+                m.toolProtect.enabled = true;
+                BlockPos block = client.player.blockPosition().offset(0, 0, 2);
+                check(client.level.getBlockState(block).is(Blocks.STONE), "stone placed for Tool Protection");
+                check(!client.gameMode.startDestroyBlock(block, Direction.NORTH), "Tool Protection stops mining with 2 durability left");
+                m.toolProtect.enabled = false;
+                check(client.gameMode.startDestroyBlock(block, Direction.NORTH), "mining works again with Tool Protection off");
+                client.gameMode.stopDestroyBlock();
+            });
+            world.getServer().runCommand("item replace entity @a weapon.mainhand with minecraft:air");
+
+            // Entity Distance hides a far pig but never a near one.
+            world.getServer().runCommand("execute at @a run summon minecraft:pig ~ ~ ~25 {NoAI:1b}");
+            world.getServer().runCommand("execute at @a run summon minecraft:pig ~1 ~ ~3 {NoAI:1b}");
+            context.waitTicks(10);
+            context.runOnClient(client -> {
+                m.entityDistance.enabled = true; m.entityRange.set(16);
+                var camera = client.gameRenderer.getMainCamera().position();
+                int hidden = 0, shown = 0;
+                for (var entity : client.level.entitiesForRendering()) {
+                    if (!(entity instanceof Pig)) continue;
+                    if (NicoClientMod.hideEntity(entity, camera.x, camera.y, camera.z)) hidden++; else shown++;
+                }
+                check(hidden == 1 && shown == 1, "Entity Distance hides only the far pig (hidden " + hidden + ", shown " + shown + ")");
+                check(!NicoClientMod.hideEntity(client.player, camera.x, camera.y, camera.z), "your own player is never hidden");
+            });
+            context.takeScreenshot("nicoclient-13b-entity-distance");
+            context.runOnClient(client -> m.entityDistance.enabled = false);
+            world.getServer().runCommand("kill @e[type=minecraft:pig]");
+
+            // Death Position reports where you died.
+            context.runOnClient(client -> { m.deathPos.enabled = true; m.deathCopy.set(1); client.keyboardHandler.setClipboard("before"); });
+            world.getServer().runCommand("kill @a");
+            context.waitTicks(20);
+            context.runOnClient(client -> {
+                BlockPos pos = client.player.blockPosition();
+                check(client.keyboardHandler.getClipboard().equals(pos.getX() + " " + pos.getY() + " " + pos.getZ()), "death position copied: " + client.keyboardHandler.getClipboard());
+            });
+            context.takeScreenshot("nicoclient-13c-death-position");
+            context.runOnClient(client -> client.player.respawn());
+            context.waitTicks(20);
+            context.setScreen(() -> null);
+            context.runOnClient(client -> { m.deathPos.enabled = false; m.deathCopy.set(0); m.pickups.enabled = false; m.save(); });
+            world.getServer().runCommand("gamemode creative @a");
 
             // The menu at the other GUI scales players really use.
             for (int scale : new int[] {1, 3}) {

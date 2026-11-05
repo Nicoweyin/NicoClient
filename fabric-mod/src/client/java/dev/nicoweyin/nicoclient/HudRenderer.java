@@ -61,6 +61,7 @@ public final class HudRenderer {
             if (module == modules.keys) keys(g, client, x, y);
             else if (module == modules.armor) armor(g, client, x, y);
             else if (module == modules.potions) potions(g, x, y, width);
+            else if (module == modules.pickups) Pickups.render(g, x, y, width);
             else label(g, text(module), x, y);
         }
         g.pose().popMatrix();
@@ -90,6 +91,7 @@ public final class HudRenderer {
         ModuleManager m = NicoClientMod.MODULES;
         if (client.player == null) return false;
         if (module == m.potions) return !client.player.getActiveEffects().isEmpty();
+        if (module == m.pickups) return Pickups.visible();
         if (module == m.held) return !client.player.getMainHandItem().isEmpty();
         if (module == m.armor) {
             for (EquipmentSlot slot : ARMOR) if (!client.player.getItemBySlot(slot).isEmpty()) return true;
@@ -102,6 +104,7 @@ public final class HudRenderer {
         ModuleManager modules = NicoClientMod.MODULES;
         if (module == modules.keys) return 52;
         if (module == modules.armor) return 72;
+        if (module == modules.pickups && hasContent(module)) return Pickups.width();
         if (module == modules.potions) {
             int widest = Ui.width(module.name);
             if (hasContent(module)) { widest = 0; for (String line : potionLines()) widest = Math.max(widest, Ui.width(line)); }
@@ -114,6 +117,7 @@ public final class HudRenderer {
         ModuleManager modules = NicoClientMod.MODULES;
         if (module == modules.keys) return 34 + (modules.keysSpace.on() ? 12 : 0) + (modules.keysMouse.on() ? 18 : 0);
         if (module == modules.potions && hasContent(module)) return potionLines().size() * 11 + 4;
+        if (module == modules.pickups && hasContent(module)) return Pickups.height();
         return module.height;
     }
 
@@ -198,7 +202,7 @@ public final class HudRenderer {
         };
     }
 
-    private static String title(String id) {
+    public static String title(String id) {
         StringBuilder out = new StringBuilder();
         for (String word : id.split("_")) {
             if (word.isEmpty()) continue;

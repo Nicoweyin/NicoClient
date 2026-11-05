@@ -73,3 +73,7 @@
 - GitHub Actions needs Java 25 for the mod build (it failed with Java 21; the exact reason was not read). Builds also hung while Gradle's output went through a pipe, which did not reproduce locally, so the cause is unconfirmed; writing to a file without a daemon took about 4 minutes. A build now stops only after 15 minutes without new output and reports the last lines.
 - 0.3.4 was published as two broken releases because electron-builder uploaded files concurrently; 0.3.5 publishes with one command.
 - Not tested: an update on another PC, an update that installs on quit without the button, and the check every four hours.
+
+## 2026-11-05: five new modules
+- `gradle runClientGameTest` passed in a real Minecraft 1.21.11 client, including the new checks: Item Pickups lists items given with /give (screenshot reviewed), Auto Sprint sprints while W is held, Tool Protection refuses to start mining with a pickaxe at 2 durability and allows it when off, Entity Distance hides a pig 25 blocks away at a 16-block range but not one 3 blocks away or your own player, and Death Position writes the position into chat and copies it (screenshot reviewed).
+- Not tested: picking items up from the ground, Tool Protection while holding the mouse button, the FPS gain of Entity Distance, and multiplayer servers.

@@ -38,7 +38,7 @@ public final class HudEditor extends Screen {
             highlight.put(module, amount);
             Ui.rounded(g, x - 1, y - 1, w + 2, h + 2, 5, Ui.alpha(Ui.accentLight(), 0.25f + 0.75f * amount));
             Ui.rounded(g, x, y, w, h, 4, Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, amount));
-            String label = module == NicoClientMod.MODULES.keys ? "WASD" : module == NicoClientMod.MODULES.armor ? "Armor" : HudRenderer.hasContent(module) && module != NicoClientMod.MODULES.potions ? HudRenderer.text(module) : module.name;
+            String label = module == NicoClientMod.MODULES.keys ? "WASD" : module == NicoClientMod.MODULES.armor ? "Armor" : HudRenderer.hasContent(module) && module != NicoClientMod.MODULES.potions && module != NicoClientMod.MODULES.pickups ? HudRenderer.text(module) : module.name;
             Ui.text(g, Ui.fit(label, w - 6), x + 4, y + Math.min(4, (h - 8) / 2f), Ui.TEXT);
         }
         g.pose().popMatrix();
