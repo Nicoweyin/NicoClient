@@ -51,7 +51,9 @@ public final class ModuleManager {
         Map.entry("autosprint", "Sprints whenever you walk forward"),
         Map.entry("toolprotect", "Stops mining before a tool breaks"),
         Map.entry("deathpos", "Tells you where you died"),
-        Map.entry("entitydistance", "Hides far away mobs for more FPS"));
+        Map.entry("entitydistance", "Hides far away mobs for more FPS"),
+        Map.entry("outline", "Color and size of the block outline"),
+        Map.entry("chathistory", "Keeps more chat messages to scroll back"));
 
     /** One configurable value of a module, shown as switch or segmented choice. */
     public static final class Setting {
@@ -140,6 +142,8 @@ public final class ModuleManager {
     public final Module customTime = new Module("time", "Custom Time", "Visuals");
     public final Module noVignette = new Module("novignette", "No Vignette", "Visuals");
     public final Module noHurtCam = new Module("nohurtcam", "No Hurt Camera", "Visuals");
+    public final Module blockOutline = new Module("outline", "Block Outline", "Visuals");
+    public final Module chatHistory = new Module("chathistory", "Chat History", "Utility");
     public final Module toggleSprint = new Module("togglesprint", "Toggle Sprint", "Utility");
     public final Module toggleSneak = new Module("togglesneak", "Toggle Sneak", "Utility");
     public final Module copyCoords = new Module("copycoords", "Copy Coordinates", "Utility");
@@ -175,6 +179,10 @@ public final class ModuleManager {
     public final Setting pickupSeconds = pickups.choice("seconds", "Show for", 3, new String[] {"2s", "3s", "5s"}, 2, 3, 5);
     public final Setting toolLimit = toolProtect.choice("limit", "Stop at durability", 5, new String[] {"2", "5", "10", "25"}, 2, 5, 10, 25);
     public final Setting deathCopy = deathPos.toggle("copy", "Copy to clipboard", false);
+    public final Setting deathGuide = deathPos.toggle("guide", "Show the way back", true);
+    public final Setting outlineColor = blockOutline.choice("color", "Color", 0, new String[] {"Accent", "White", "Cyan", "Red", "Green"}, 0, 1, 2, 3, 4);
+    public final Setting outlineWidth = blockOutline.choice("width", "Thickness", 200, new String[] {"Thin", "Normal", "Thick"}, 100, 200, 300);
+    public final Setting chatHistoryLimit = chatHistory.choice("limit", "Messages kept", 1000, new String[] {"500", "1000", "5000"}, 500, 1000, 5000);
     public final Setting entityRange = entityDistance.choice("range", "Distance", 48, new String[] {"16", "32", "48", "64"}, 16, 32, 48, 64);
     public final Setting entityPlayers = entityDistance.toggle("players", "Also hide players", false);
     public final Setting dynamicFpsLimit = dynamicFps.choice("limit", "Unfocused limit", 15, new String[] {"5", "15", "30"}, 5, 15, 30);
@@ -190,7 +198,7 @@ public final class ModuleManager {
     /** False until the first-run hint about the menu key has been shown. */
     public boolean welcomed;
     public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups);
-    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, particles, dynamicFps, entityDistance)).toList();
+    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, blockOutline, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, chatHistory, particles, dynamicFps, entityDistance)).toList();
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
     private final Properties properties = new Properties();
 

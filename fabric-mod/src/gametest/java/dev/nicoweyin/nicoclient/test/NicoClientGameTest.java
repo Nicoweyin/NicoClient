@@ -332,6 +332,27 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             });
             world.getServer().runCommand("item replace entity @a weapon.mainhand with minecraft:air");
 
+            // Block Outline recolors the outline of the block you look at.
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 35");
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-13d-outline-vanilla");
+            context.runOnClient(client -> { m.blockOutline.enabled = true; m.outlineColor.set(3); m.outlineWidth.set(300); });
+            context.waitTicks(2);
+            context.runOnClient(client -> check(NicoClientMod.outlineColor() == 0xCCFF6B6B, "Block Outline uses the chosen color"));
+            context.takeScreenshot("nicoclient-13e-outline-red-thick");
+            context.runOnClient(client -> { m.blockOutline.enabled = false; m.outlineColor.set(0); m.outlineWidth.set(200); });
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 0");
+
+            // Chat History keeps more than vanilla's 100 messages.
+            context.runOnClient(client -> {
+                m.chatHistory.enabled = true; m.chatHistoryLimit.set(500);
+                for (int i = 0; i < 150; i++) client.gui.getChat().addMessage(net.minecraft.network.chat.Component.literal("history " + i));
+                check(chatSize(client.gui.getChat()) >= 150, "Chat History keeps 150 messages, has " + chatSize(client.gui.getChat()));
+                m.chatHistory.enabled = false;
+                for (int i = 0; i < 5; i++) client.gui.getChat().addMessage(net.minecraft.network.chat.Component.literal("vanilla " + i));
+                check(chatSize(client.gui.getChat()) == 100, "without Chat History the vanilla limit of 100 applies");
+            });
+
             // Entity Distance hides a far pig but never a near one.
             world.getServer().runCommand("execute at @a run summon minecraft:pig ~ ~ ~25 {NoAI:1b}");
             world.getServer().runCommand("execute at @a run summon minecraft:pig ~1 ~ ~3 {NoAI:1b}");
@@ -353,6 +374,8 @@ public final class NicoClientGameTest implements FabricClientGameTest {
 
             // Death Position reports where you died.
             context.runOnClient(client -> { m.deathPos.enabled = true; m.deathCopy.set(1); client.keyboardHandler.setClipboard("before"); });
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~ ~25");
+            context.waitTicks(5);
             world.getServer().runCommand("kill @a");
             context.waitTicks(20);
             context.runOnClient(client -> {
@@ -363,6 +386,13 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.runOnClient(client -> client.player.respawn());
             context.waitTicks(20);
             context.setScreen(() -> null);
+            context.waitTicks(10);
+            context.runOnClient(client -> check(NicoClientMod.deathPoint != null && client.player.blockPosition().distSqr(NicoClientMod.deathPoint) > 100, "the way back to the death point is shown after respawning"));
+            context.takeScreenshot("nicoclient-13f-death-guide");
+            BlockPos deathPoint = context.computeOnClient(client -> NicoClientMod.deathPoint);
+            world.getServer().runCommand("tp @a " + deathPoint.getX() + " " + deathPoint.getY() + " " + deathPoint.getZ());
+            context.waitTicks(10);
+            context.runOnClient(client -> check(NicoClientMod.deathPoint == null, "the way back ends when you arrive, at " + client.player.blockPosition() + " death " + NicoClientMod.deathPoint));
             context.runOnClient(client -> { m.deathPos.enabled = false; m.deathCopy.set(0); m.pickups.enabled = false; m.save(); });
             world.getServer().runCommand("gamemode creative @a");
 
@@ -404,6 +434,15 @@ public final class NicoClientGameTest implements FabricClientGameTest {
     private static void moveTo(ClientGameTestContext context, int guiX, int guiY) {
         double scale = context.computeOnClient(client -> (double) client.getWindow().getGuiScale());
         context.getInput().setCursorPos((guiX + 0.5) * scale, (guiY + 0.5) * scale);
+    }
+
+    /** Reads how many chat messages are stored; the field is private in Minecraft. */
+    private static int chatSize(net.minecraft.client.gui.components.ChatComponent chat) {
+        try {
+            var field = net.minecraft.client.gui.components.ChatComponent.class.getDeclaredField("allMessages");
+            field.setAccessible(true);
+            return ((java.util.List<?>) field.get(chat)).size();
+        } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
     }
 
     private static void check(boolean condition, String what) {

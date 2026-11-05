@@ -43,7 +43,7 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 32. [ ] Screenshot shortcut
 33. [ ] Screenshot notification
 34. [x] Chat timestamps (client test)
-35. [ ] Chat history extension
+35. [x] Chat history extension, 500 to 5000 messages (stored count checked in client test)
 36. [ ] Waypoint management
 37. [x] Copy Coordinates (key press and clipboard checked in client test)
 38. [ ] Inventory search
@@ -64,8 +64,8 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 
 ## Additional requested modules (planned)
 
-- Visuals: Trajectories for bow, snowballs, eggs, ender pearls and splash potions with optional impact marker (path draws in client test for a snowball; accuracy not compared with real throws); Hit Color, Block Outline, Clear Water and FOV Changer remain planned.
+- Visuals: Trajectories for bow, snowballs, eggs, ender pearls and splash potions with optional impact marker (path draws in client test for a snowball; accuracy not compared with real throws); Block Outline with color and thickness (client test, compared with the vanilla outline). Hit Color, Clear Water and FOV Changer remain planned.
 - HUD: Server Info (client test in single-player), Day Counter, Light Level and Memory Usage (client test).
 - Performance: Dynamic FPS is added (loads in client test; lowering the frame rate while unfocused was not measured). Entity Distance hides entities beyond 16 to 64 blocks, players only when chosen (which entities are hidden checked in client test; the FPS gain was not measured). Smart Animations and Performance Presets remain planned.
-- Utility: Death Position writes where you died into chat and can copy it (client test). Inventory Profiles, Screenshot Manager and Auto Reconnect remain planned.
+- Utility: Death Position writes where you died into chat, can copy it, and after respawning points the way back with an arrow and the distance until you arrive (client test). Inventory Profiles, Screenshot Manager and Auto Reconnect remain planned.
 - Cosmetics: Capes, Wings, Particle Cosmetics and HUD or GUI Themes are not implemented; the launcher page that only stored preferences was removed.

@@ -8,6 +8,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -24,6 +26,9 @@ public final class NicoClientMod implements ClientModInitializer {
     public static KeyMapping zoomKey, menuKey;
     private static boolean sprintApplied, sneakApplied, fogApplied, wasDead;
     private static long lastToolWarning;
+    /** Where the player last died while Show the way back is on; null when there is nothing to show. */
+    public static BlockPos deathPoint;
+    public static ResourceKey<Level> deathWorld;
     private static float zoomAmount = 1;
     private static long lastZoomFrame;
 
@@ -93,8 +98,15 @@ public final class NicoClientMod implements ClientModInitializer {
             String world = HudRenderer.title(client.level.dimension().identifier().getPath());
             client.player.displayClientMessage(Component.literal("You died at " + text + " (" + world + ")"), false);
             if (MODULES.deathCopy.on()) client.keyboardHandler.setClipboard(text);
+            deathPoint = pos;
+            deathWorld = client.level.dimension();
         }
         wasDead = dead;
+        // The guide ends when you get back, leave the world or turn it off.
+        if (deathPoint != null && (client.level == null || !MODULES.deathPos.enabled || !MODULES.deathGuide.on()
+                || (!dead && client.player != null && client.level.dimension() == deathWorld && client.player.blockPosition().distSqr(deathPoint) < 16))) {
+            deathPoint = null;
+        }
     }
 
     /** True when the held tool is nearly broken and Tool Protection should stop mining. */
@@ -120,6 +132,18 @@ public final class NicoClientMod implements ClientModInitializer {
         if (entity instanceof Player && !MODULES.entityPlayers.on()) return false;
         double range = MODULES.entityRange.get();
         return entity.distanceToSqr(x, y, z) > range * range;
+    }
+
+    /** The Block Outline color, slightly see-through like the vanilla outline. */
+    public static int outlineColor() {
+        int rgb = switch (MODULES.outlineColor.index()) {
+            case 1 -> 0xFFFFFF;
+            case 2 -> 0x8BE9F5;
+            case 3 -> 0xFF6B6B;
+            case 4 -> 0x6BF28C;
+            default -> Ui.accentLight() & 0xFFFFFF;
+        };
+        return 0xCC000000 | rgb;
     }
 
     /** Uses Minecraft's own options, and only touches them when a module changes state. */

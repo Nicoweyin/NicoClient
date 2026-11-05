@@ -65,6 +65,7 @@ public final class HudRenderer {
             else label(g, text(module), x, y);
         }
         g.pose().popMatrix();
+        deathGuide(g, client);
     }
 
     /** Tells new players once how to find the menu, then fades away. */
@@ -83,6 +84,26 @@ public final class HudRenderer {
         int width = Ui.width(text) + 24, x = (g.guiWidth() - width) / 2, y = g.guiHeight() / 4;
         Ui.rounded(g, x, y, width, 22, 8, Ui.alpha(Ui.PANEL, fade));
         Ui.text(g, text, x + 12, y + 8, Ui.alpha(Ui.TEXT, fade));
+    }
+
+    private static final String[] ARROWS = {"\u2191", "\u2197", "\u2192", "\u2198", "\u2193", "\u2199", "\u2190", "\u2196"};
+
+    /** Points the way back to where you died, with the distance. */
+    private static void deathGuide(GuiGraphics g, Minecraft client) {
+        BlockPos point = NicoClientMod.deathPoint;
+        if (point == null || client.player.isDeadOrDying()) return;
+        String text;
+        if (client.level.dimension() != NicoClientMod.deathWorld) text = "Death point in " + title(NicoClientMod.deathWorld.identifier().getPath());
+        else {
+            double dx = point.getX() + 0.5 - client.player.getX(), dz = point.getZ() + 0.5 - client.player.getZ();
+            double target = Math.toDegrees(Math.atan2(-dx, dz));
+            double turn = ((target - client.player.getYRot()) % 360 + 540) % 360 - 180;
+            text = ARROWS[Math.floorMod((int) Math.round(turn / 45), 8)] + "  Death point  " + (int) Math.sqrt(dx * dx + dz * dz) + " m";
+        }
+        // Just below the crosshair, where it is seen without covering HUD modules.
+        int width = Ui.width(text) + 16, x = (g.guiWidth() - width) / 2, y = g.guiHeight() / 2 + 22;
+        Ui.rounded(g, x, y, width, 17, 6, 0xB00D0F1E);
+        Ui.text(g, text, x + 8, y + 5, Ui.accentLight());
     }
 
     /** Modules without anything to show stay hidden instead of drawing an empty box. */
