@@ -50,11 +50,16 @@ public final class NicoScreen extends AnimatedScreen {
 
     @Override protected void draw(GuiGraphics g, int mouseX, int mouseY) {
         int left = left(), top = top(), panelW = panelWidth(), panelH = panelHeight();
+        // A thin accent-tinted rim gives the panel depth.
+        Ui.rounded(g, left - 1, top - 1, panelW + 2, panelH + 2, 13, Ui.alpha(Ui.mix(Ui.HAIRLINE, Ui.accent(), 0.35f), alpha));
         Ui.rounded(g, left, top, panelW, panelH, 12, Ui.alpha(Ui.PANEL, alpha));
         Ui.rounded(g, left + 4, top + 4, SIDEBAR - 4, panelH - 8, 9, Ui.alpha(Ui.SIDEBAR, alpha));
 
-        Ui.rounded(g, left + 14, top + 15, 6, 6, 3, Ui.alpha(Ui.accentLight(), alpha));
-        Ui.text(g, "NicoClient", left + 25, top + 14, Ui.alpha(Ui.TEXT, alpha));
+        Ui.rounded(g, left + 12, top + 10, 10, 10, 5, Ui.alpha(Ui.mix(Ui.accent(), Ui.SIDEBAR, 0.55f), alpha));
+        Ui.rounded(g, left + 14, top + 12, 6, 6, 3, Ui.alpha(Ui.accentLight(), alpha));
+        Ui.text(g, "NicoClient", left + 27, top + 11, Ui.alpha(Ui.TEXT, alpha));
+        long active = NicoClientMod.MODULES.modules.stream().filter(module -> module.enabled).count();
+        Ui.text(g, active + " of " + NicoClientMod.MODULES.modules.size() + " on", left + 27, top + 22, Ui.alpha(Ui.MUTED, alpha));
 
         float indicator = animate("category", ITEMS_TOP + category * (ITEM + ITEM_GAP), 20);
         Ui.rounded(g, left + 9, top + indicator, SIDEBAR - 14, ITEM, 6, Ui.alpha(Ui.accent(), alpha));
@@ -97,7 +102,9 @@ public final class NicoScreen extends AnimatedScreen {
             float on = animate(module, module.enabled ? 1 : 0, 16);
             if (y + ROW < listTop || y > listTop + listH) continue;
             float hover = animate("row:" + module.id, inList && Ui.inside(mouseX, mouseY, x, y, w, ROW) ? 1 : 0, 16);
-            Ui.rounded(g, x, y, w, ROW, 8, Ui.alpha(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, hover), alpha));
+            int surface = Ui.mix(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, hover), Ui.accent(), on * 0.12f);
+            Ui.rounded(g, x, y, w, ROW, 8, Ui.alpha(surface, alpha));
+            if (on > 0.01f) Ui.rounded(g, x + 3, y + 8, 3, ROW - 16, 1.5f, Ui.alpha(Ui.accentLight(), alpha * on));
             Ui.text(g, Ui.fit(module.name, w - 80), x + 11, y + 6, Ui.alpha(Ui.TEXT, alpha));
             Ui.text(g, Ui.fit(module.description(), w - 70), x + 11, y + 17, Ui.alpha(Ui.MUTED, alpha));
             boolean overStar = inList && Ui.inside(mouseX, mouseY, starX(x, w), y, 16, ROW);
