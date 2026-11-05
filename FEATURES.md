@@ -48,7 +48,7 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 37. [x] Copy Coordinates (key press and clipboard checked in client test)
 38. [ ] Inventory search
 39. [x] Item pickup notifications as a movable HUD module (client test with /give; picking items off the ground not exercised)
-40. [ ] Sound volume shortcuts
+40. [x] Sound volume shortcut: Quiet Mode turns all game sounds down to 0 to 50% and can have a toggle key (volume math checked in client test; not listened to)
 
 ## Client Settings (10)
 41. [x] Rounded, animated module menu with a sidebar and the Inter font (opens and closes with Right Shift in client test)
@@ -64,8 +64,8 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 
 ## Additional requested modules (planned)
 
-- Visuals: Trajectories for bow, snowballs, eggs, ender pearls and splash potions with optional impact marker (path draws in client test for a snowball; accuracy not compared with real throws); Block Outline with color and thickness (client test, compared with the vanilla outline). Hit Color, Clear Water and FOV Changer remain planned.
-- HUD: Server Info (client test in single-player), Day Counter, Light Level and Memory Usage (client test).
+- Visuals: Trajectories for bow, snowballs, eggs, ender pearls and splash potions with optional impact marker (path draws in client test for a snowball; accuracy not compared with real throws); Block Outline with color and thickness (client test, compared with the vanilla outline). Hit Color (green hurt flash on a pig checked in client test), Clear Water (fog distances and screenshots compared under water), Static FOV (no FOV change while flying, checked in client test) and Freelook on a hold key, default Left Alt (camera switch and turning checked in client test; the test window does not capture the real mouse, so the mouse path was exercised through the same call Minecraft makes). Some servers do not allow Freelook.
+- HUD: Server Info (client test in single-player), Day Counter, Light Level, Memory Usage, Reach Display and Combo Counter (real attacks on a pig in client test), Food & Saturation, and Arrow Counter while holding a bow (client test).
 - Performance: Dynamic FPS is added (loads in client test; lowering the frame rate while unfocused was not measured). Entity Distance hides entities beyond 16 to 64 blocks, players only when chosen (which entities are hidden checked in client test; the FPS gain was not measured). Smart Animations and Performance Presets remain planned.
-- Utility: Death Position writes where you died into chat, can copy it, and after respawning points the way back with an arrow and the distance until you arrive (client test). Inventory Profiles, Screenshot Manager and Auto Reconnect remain planned.
+- Utility: Death Position writes where you died into chat, can copy it, and after respawning points the way back with an arrow and the distance until you arrive (client test). Auto Reconnect adds a Reconnect button after a disconnect, with an optional countdown (button and countdown checked in client test; a real reconnect to a server was not tested). Inventory Profiles and Screenshot Manager remain planned.
 - Cosmetics: Capes, Wings, Particle Cosmetics and HUD or GUI Themes are not implemented; the launcher page that only stored preferences was removed.

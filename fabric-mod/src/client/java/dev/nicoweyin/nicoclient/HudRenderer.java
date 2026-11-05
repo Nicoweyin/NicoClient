@@ -6,6 +6,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.tags.ItemTags;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -113,6 +115,11 @@ public final class HudRenderer {
         if (client.player == null) return false;
         if (module == m.potions) return !client.player.getActiveEffects().isEmpty();
         if (module == m.pickups) return Pickups.visible();
+        if (module == m.arrows) {
+            if (m.arrowsAlways.on()) return true;
+            ItemStack hand = client.player.getMainHandItem(), off = client.player.getOffhandItem();
+            return hand.is(Items.BOW) || hand.is(Items.CROSSBOW) || off.is(Items.BOW) || off.is(Items.CROSSBOW);
+        }
         if (module == m.held) return !client.player.getMainHandItem().isEmpty();
         if (module == m.armor) {
             for (EquipmentSlot slot : ARMOR) if (!client.player.getItemBySlot(slot).isEmpty()) return true;
@@ -154,7 +161,19 @@ public final class HudRenderer {
             long used = runtime.totalMemory() - runtime.freeMemory(), max = runtime.maxMemory();
             return m.memoryPercent.on() ? "RAM " + used * 100 / max + "%" : "RAM " + used / 1048576 + " / " + max / 1048576 + " MB";
         }
+        if (module == m.reach) return Combat.reachText();
+        if (module == m.combo) return Combat.comboText();
         if (client.player == null) return module.name;
+        if (module == m.food) {
+            var food = client.player.getFoodData();
+            return "Food " + food.getFoodLevel() + (m.foodSaturation.on() ? String.format(Locale.ROOT, "  Sat %.1f", food.getSaturationLevel()) : "");
+        }
+        if (module == m.arrows) {
+            int count = 0;
+            var inventory = client.player.getInventory();
+            for (int i = 0; i < inventory.getContainerSize(); i++) if (inventory.getItem(i).is(ItemTags.ARROWS)) count += inventory.getItem(i).getCount();
+            return count + (count == 1 ? " arrow" : " arrows");
+        }
         if (module == m.coords) {
             BlockPos pos = client.player.blockPosition();
             return pos.getX() + (m.coordsY.on() ? " " + pos.getY() : "") + " " + pos.getZ();

@@ -6,6 +6,17 @@ import dev.nicoweyin.nicoclient.ModuleSettingsScreen;
 import dev.nicoweyin.nicoclient.NicoClientMod;
 import dev.nicoweyin.nicoclient.NicoScreen;
 import dev.nicoweyin.nicoclient.Pickups;
+import dev.nicoweyin.nicoclient.Combat;
+import dev.nicoweyin.nicoclient.Freelook;
+import dev.nicoweyin.nicoclient.Reconnect;
+import dev.nicoweyin.nicoclient.mixin.OverlayTextureAccessor;
+import net.fabricmc.fabric.api.client.screen.v1.Screens;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.animal.pig.Pig;
@@ -396,6 +407,142 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.runOnClient(client -> { m.deathPos.enabled = false; m.deathCopy.set(0); m.pickups.enabled = false; m.save(); });
             world.getServer().runCommand("gamemode creative @a");
 
+            // Modules added in 0.5.0.
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 0");
+            world.getServer().runCommand("execute at @a run fill ~-3 ~-1 ~-3 ~3 ~-1 ~8 minecraft:stone");
+            world.getServer().runCommand("execute at @a run fill ~-3 ~ ~-3 ~3 ~3 ~8 minecraft:air");
+            world.getServer().runCommand("execute at @a run summon minecraft:pig ~ ~ ~3 {NoAI:1b}");
+            world.getServer().runCommand("give @a minecraft:arrow 20");
+            world.getServer().runCommand("item replace entity @a weapon.mainhand with minecraft:bow");
+            context.waitTicks(10);
+
+            // Reach Display and Combo Counter count real attacks; Food and Arrow Counter read the inventory.
+            context.runOnClient(client -> {
+                m.reach.enabled = true; m.combo.enabled = true; m.food.enabled = true; m.arrows.enabled = true;
+                Pig pig = null;
+                for (var entity : client.level.entitiesForRendering()) if (entity instanceof Pig found) pig = found;
+                check(pig != null, "pig for the combat test");
+                check(Combat.comboText().equals("No combo"), "no combo before hitting");
+                client.gameMode.attack(client.player, pig);
+                client.gameMode.attack(client.player, pig);
+                check(Combat.comboText().equals("Combo 2"), "two hits make a combo of 2, got " + Combat.comboText());
+                check(Combat.reachText().matches("Reach [0-9]\\.[0-9]{2} m"), "reach is shown, got " + Combat.reachText());
+                double reach = Double.parseDouble(Combat.reachText().split(" ")[1]);
+                check(reach > 1 && reach < 3.5, "reach is plausible: " + reach);
+                check(hudText(m.arrows).equals("20 arrows"), "Arrow Counter counts 20, got " + hudText(m.arrows));
+                check(hudText(m.food).startsWith("Food "), "Food shows hunger");
+            });
+            context.takeScreenshot("nicoclient-14a-combat-hud");
+
+            // Hit Color repaints the hurt overlay and restores vanilla red when off.
+            context.runOnClient(client -> { m.hitColor.enabled = true; m.hitColorValue.set(2); });
+            context.waitTicks(2);
+            context.runOnClient(client -> {
+                var pixels = ((OverlayTextureAccessor) client.gameRenderer.overlayTexture()).nicoclient$texture().getPixels();
+                check(pixels.getPixel(3, 3) == 0xB22EE86B, "Hit Color paints the overlay green, got " + Integer.toHexString(pixels.getPixel(3, 3)));
+            });
+            world.getServer().runCommand("damage @e[type=minecraft:pig,limit=1] 1");
+            context.waitTicks(2);
+            context.takeScreenshot("nicoclient-14b-hit-color");
+            context.runOnClient(client -> m.hitColor.enabled = false);
+            context.waitTicks(2);
+            context.runOnClient(client -> {
+                var pixels = ((OverlayTextureAccessor) client.gameRenderer.overlayTexture()).nicoclient$texture().getPixels();
+                check(pixels.getPixel(3, 3) == 0xB2FF0000, "vanilla red is back without Hit Color");
+                m.reach.enabled = false; m.combo.enabled = false; m.food.enabled = false; m.arrows.enabled = false;
+            });
+            world.getServer().runCommand("kill @e[type=minecraft:pig]");
+            world.getServer().runCommand("item replace entity @a weapon.mainhand with minecraft:air");
+
+            // Static FOV keeps the field of view still while flying.
+            context.runOnClient(client -> {
+                client.player.getAbilities().flying = true;
+                m.staticFov.enabled = false;
+                float vanilla = client.player.getFieldOfViewModifier(true, 1f);
+                m.staticFov.enabled = true;
+                float fixed = client.player.getFieldOfViewModifier(true, 1f);
+                check(vanilla != 1f && fixed == 1f, "Static FOV removes the flying FOV change (" + vanilla + " -> " + fixed + ")");
+                m.staticFov.enabled = false;
+                client.player.getAbilities().flying = false;
+            });
+
+            // Freelook turns the camera, not the player, and restores first person afterwards.
+            context.runOnClient(client -> { m.freelook.enabled = true; client.options.setCameraType(CameraType.FIRST_PERSON); });
+            float[] facing = new float[1];
+            context.runOnClient(client -> facing[0] = client.player.getYRot());
+            context.getInput().holdKey(GLFW.GLFW_KEY_LEFT_ALT);
+            context.waitTicks(3);
+            // The test window does not capture the mouse, so this makes the same call Minecraft's mouse handler makes.
+            context.runOnClient(client -> client.player.turn(300, -100));
+            context.waitTicks(3);
+            context.runOnClient(client -> {
+                check(Freelook.active && client.options.getCameraType() == CameraType.THIRD_PERSON_BACK, "holding the Freelook key switches to the orbit camera");
+                check(client.player.getYRot() == facing[0], "the player keeps facing ahead during Freelook");
+                check(Math.abs(Freelook.yaw - facing[0]) > 5, "the mouse turns the camera during Freelook, yaw " + Freelook.yaw);
+            });
+            context.takeScreenshot("nicoclient-14c-freelook");
+            context.getInput().releaseKey(GLFW.GLFW_KEY_LEFT_ALT);
+            context.waitTicks(3);
+            context.runOnClient(client -> {
+                check(!Freelook.active && client.options.getCameraType() == CameraType.FIRST_PERSON, "releasing Freelook returns to first person");
+                m.freelook.enabled = false;
+            });
+
+            // Quiet Mode scales every sound category without touching Minecraft's volume options.
+            context.runOnClient(client -> {
+                float loud = soundVolume(client, SoundSource.BLOCKS);
+                double option = client.options.getSoundSourceVolume(SoundSource.MASTER);
+                m.quietMode.enabled = true; m.quietVolume.set(25);
+                float quiet = soundVolume(client, SoundSource.BLOCKS);
+                check(loud > 0 && Math.abs(quiet - loud * 0.25f) < 0.001f, "Quiet Mode plays sounds at 25% (" + loud + " -> " + quiet + ")");
+                check(client.options.getSoundSourceVolume(SoundSource.MASTER) == option, "Quiet Mode leaves the volume options alone");
+                m.quietMode.enabled = false;
+            });
+
+            // Clear Water: compare the view under water.
+            world.getServer().runCommand("execute at @a run fill ~-8 ~-1 ~-8 ~8 ~5 ~24 minecraft:water");
+            world.getServer().runCommand("execute at @a run fill ~-8 ~-2 ~-8 ~8 ~-2 ~24 minecraft:sand");
+            world.getServer().runCommand("execute at @a run fill ~-1 ~-1 ~12 ~1 ~3 ~14 minecraft:gold_block");
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~1 ~ 0 10");
+            context.waitTicks(30);
+            context.takeScreenshot("nicoclient-14d-water-normal");
+            context.runOnClient(client -> {
+                var camera = client.gameRenderer.getMainCamera();
+                java.util.function.Supplier<net.minecraft.client.renderer.fog.FogData> fog = () -> {
+                    var data = new net.minecraft.client.renderer.fog.FogData();
+                    new net.minecraft.client.renderer.fog.environment.WaterFogEnvironment().setupFog(data, camera, client.level, 128, client.getDeltaTracker());
+                    return data;
+                };
+                m.clearWater.enabled = false;
+                float vanilla = fog.get().environmentalEnd;
+                m.clearWater.enabled = true; m.waterClarity.set(1);
+                float more = fog.get().environmentalEnd;
+                m.waterClarity.set(2);
+                var full = fog.get();
+                check(vanilla > 0 && vanilla < 128, "vanilla water fog is short: " + vanilla);
+                check(more > vanilla && more <= 128, "Clarity More sees further: " + vanilla + " -> " + more);
+                check(full.environmentalEnd == 128 && full.skyEnd == 128, "Clarity Full reaches the view distance: " + full.environmentalEnd);
+            });
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-14e-water-clear");
+            context.runOnClient(client -> m.clearWater.enabled = false);
+            world.getServer().runCommand("execute at @a run fill ~-8 ~-3 ~-8 ~8 ~5 ~24 minecraft:air replace minecraft:water");
+
+            // Auto Reconnect adds a counting Reconnect button after a disconnect from a server.
+            context.runOnClient(client -> {
+                m.autoReconnect.enabled = true; m.reconnectDelay.set(10);
+                Reconnect.lastServer = new ServerData("Test", "play.example.test", ServerData.Type.OTHER);
+            });
+            context.setScreen(() -> new DisconnectedScreen(new TitleScreen(), Component.literal("Connection Lost"), Component.literal("Test disconnect")));
+            context.waitTicks(25);
+            context.runOnClient(client -> {
+                var labels = Screens.getButtons(client.screen).stream().map(widget -> widget.getMessage().getString()).toList();
+                check(labels.stream().anyMatch(label -> label.equals("Reconnect in 9s") || label.equals("Reconnect in 8s")), "the Reconnect button counts down: " + labels);
+            });
+            context.takeScreenshot("nicoclient-14f-reconnect");
+            context.setScreen(() -> null);
+            context.runOnClient(client -> { m.autoReconnect.enabled = false; m.reconnectDelay.set(0); Reconnect.lastServer = null; m.save(); });
+
             // The menu at the other GUI scales players really use.
             for (int scale : new int[] {1, 3}) {
                 context.runOnClient(client -> {
@@ -434,6 +581,20 @@ public final class NicoClientGameTest implements FabricClientGameTest {
     private static void moveTo(ClientGameTestContext context, int guiX, int guiY) {
         double scale = context.computeOnClient(client -> (double) client.getWindow().getGuiScale());
         context.getInput().setCursorPos((guiX + 0.5) * scale, (guiY + 0.5) * scale);
+    }
+
+    private static String hudText(ModuleManager.HudModule module) { return dev.nicoweyin.nicoclient.HudRenderer.text(module); }
+
+    /** Asks Minecraft's sound engine how loud a full-volume sound of this category plays right now. */
+    private static float soundVolume(net.minecraft.client.Minecraft client, SoundSource source) {
+        try {
+            var engineField = net.minecraft.client.sounds.SoundManager.class.getDeclaredField("soundEngine");
+            engineField.setAccessible(true);
+            Object engine = engineField.get(client.getSoundManager());
+            var method = net.minecraft.client.sounds.SoundEngine.class.getDeclaredMethod("calculateVolume", float.class, SoundSource.class);
+            method.setAccessible(true);
+            return (float) method.invoke(engine, 1f, source);
+        } catch (ReflectiveOperationException e) { throw new AssertionError(e); }
     }
 
     /** Reads how many chat messages are stored; the field is private in Minecraft. */

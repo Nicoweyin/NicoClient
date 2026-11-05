@@ -8,6 +8,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.sounds.SoundSource;
+import dev.nicoweyin.nicoclient.mixin.OverlayTextureAccessor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.effect.MobEffects;
@@ -23,9 +25,12 @@ import org.lwjgl.glfw.GLFW;
 
 public final class NicoClientMod implements ClientModInitializer {
     public static final ModuleManager MODULES = new ModuleManager();
-    public static KeyMapping zoomKey, menuKey;
+    public static KeyMapping zoomKey, menuKey, freelookKey;
     private static boolean sprintApplied, sneakApplied, fogApplied, wasDead;
     private static long lastToolWarning;
+    private static int hitColorApplied = -2;
+    private static boolean quietApplied;
+    private static int quietVolumeApplied = -1;
     /** Where the player last died while Show the way back is on; null when there is nothing to show. */
     public static BlockPos deathPoint;
     public static ResourceKey<Level> deathWorld;
@@ -40,11 +45,17 @@ public final class NicoClientMod implements ClientModInitializer {
         KeyMapping toggle = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.fps", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping gui = menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));
         zoomKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.zoom", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, category));
+        freelookKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.freelook", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, category));
+        Reconnect.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggle.consumeClick()) { MODULES.fps.enabled = !MODULES.fps.enabled; MODULES.save(); }
             while (gui.consumeClick()) if (client.screen == null) client.setScreen(new NicoScreen());
             applyOptions(client);
             Pickups.tick(client);
+            Combat.tick(client);
+            Freelook.tick(client);
+            applyHitColor(client);
+            applyQuietMode(client);
             autoSprint(client);
             deathPosition(client);
         });
@@ -132,6 +143,39 @@ public final class NicoClientMod implements ClientModInitializer {
         if (entity instanceof Player && !MODULES.entityPlayers.on()) return false;
         double range = MODULES.entityRange.get();
         return entity.distanceToSqr(x, y, z) > range * range;
+    }
+
+    /** The hurt tint of mobs and players. Vanilla's red is restored when Hit Color is off. */
+    public static int hitColor() {
+        if (!MODULES.hitColor.enabled) return 0xB2FF0000;
+        int rgb = switch (MODULES.hitColorValue.index()) {
+            case 1 -> 0x3D7BFF;
+            case 2 -> 0x2EE86B;
+            case 3 -> 0xFFFFFF;
+            default -> Ui.accentLight() & 0xFFFFFF;
+        };
+        return 0xB2000000 | rgb;
+    }
+
+    /** Repaints the hurt rows of Minecraft's overlay texture only when the color changes. */
+    private static void applyHitColor(Minecraft client) {
+        int color = hitColor();
+        if (color == hitColorApplied || client.gameRenderer == null) return;
+        var texture = ((OverlayTextureAccessor) client.gameRenderer.overlayTexture()).nicoclient$texture();
+        var pixels = texture.getPixels();
+        if (pixels == null) return;
+        for (int y = 0; y < 8; y++) for (int x = 0; x < 16; x++) pixels.setPixel(x, y, color);
+        texture.upload();
+        hitColorApplied = color;
+    }
+
+    /** Sounds already playing follow Quiet Mode right away. */
+    private static void applyQuietMode(Minecraft client) {
+        int volume = MODULES.quietVolume.get();
+        if (MODULES.quietMode.enabled == quietApplied && volume == quietVolumeApplied) return;
+        quietApplied = MODULES.quietMode.enabled;
+        quietVolumeApplied = volume;
+        for (SoundSource source : SoundSource.values()) client.getSoundManager().refreshCategoryVolume(source);
     }
 
     /** The Block Outline color, slightly see-through like the vanilla outline. */

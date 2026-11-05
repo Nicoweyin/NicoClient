@@ -53,7 +53,17 @@ public final class ModuleManager {
         Map.entry("deathpos", "Tells you where you died"),
         Map.entry("entitydistance", "Hides far away mobs for more FPS"),
         Map.entry("outline", "Color and size of the block outline"),
-        Map.entry("chathistory", "Keeps more chat messages to scroll back"));
+        Map.entry("chathistory", "Keeps more chat messages to scroll back"),
+        Map.entry("reach", "How far away your last hit landed"),
+        Map.entry("combo", "Hits in a row without being hit"),
+        Map.entry("food", "Your hunger and hidden saturation"),
+        Map.entry("arrows", "Arrows left while holding a bow"),
+        Map.entry("staticfov", "No FOV change when sprinting or flying"),
+        Map.entry("clearwater", "See further underwater"),
+        Map.entry("hitcolor", "Color of mobs and players when hit"),
+        Map.entry("freelook", "Hold a key to look around you"),
+        Map.entry("quiet", "Turns all game sounds down at once"),
+        Map.entry("reconnect", "Rejoin a server after a disconnect"));
 
     /** One configurable value of a module, shown as switch or segmented choice. */
     public static final class Setting {
@@ -132,6 +142,10 @@ public final class ModuleManager {
     public final HudModule server = new HudModule("server", "Server Info", false, THIRD_COLUMN, 5 + ROW, 15);
     public final HudModule potions = new HudModule("potions", "Potion Effects", false, THIRD_COLUMN, 5 + ROW * 2, 15);
     public final HudModule pickups = new HudModule("pickups", "Item Pickups", false, THIRD_COLUMN, 5 + ROW * 5, 18);
+    public final HudModule reach = new HudModule("reach", "Reach Display", false, SECOND_COLUMN, 5 + ROW * 7, 15);
+    public final HudModule combo = new HudModule("combo", "Combo Counter", false, SECOND_COLUMN, 5 + ROW * 8, 15);
+    public final HudModule food = new HudModule("food", "Food & Saturation", false, 5, FIRST_ROW + ROW * 5, 15);
+    public final HudModule arrows = new HudModule("arrows", "Arrow Counter", false, 5, FIRST_ROW + ROW * 6, 15);
     public final Module zoom = new Module("zoom", "Zoom", "Visuals", true);
     public final Module crosshair = new Module("crosshair", "Custom Crosshair", "Visuals");
     public final Module lowFire = new Module("lowfire", "Low Fire", "Visuals");
@@ -143,7 +157,13 @@ public final class ModuleManager {
     public final Module noVignette = new Module("novignette", "No Vignette", "Visuals");
     public final Module noHurtCam = new Module("nohurtcam", "No Hurt Camera", "Visuals");
     public final Module blockOutline = new Module("outline", "Block Outline", "Visuals");
+    public final Module staticFov = new Module("staticfov", "Static FOV", "Visuals");
+    public final Module clearWater = new Module("clearwater", "Clear Water", "Visuals");
+    public final Module hitColor = new Module("hitcolor", "Hit Color", "Visuals");
+    public final Module freelook = new Module("freelook", "Freelook", "Visuals");
     public final Module chatHistory = new Module("chathistory", "Chat History", "Utility");
+    public final Module quietMode = new Module("quiet", "Quiet Mode", "Utility");
+    public final Module autoReconnect = new Module("reconnect", "Auto Reconnect", "Utility");
     public final Module toggleSprint = new Module("togglesprint", "Toggle Sprint", "Utility");
     public final Module toggleSneak = new Module("togglesneak", "Toggle Sneak", "Utility");
     public final Module copyCoords = new Module("copycoords", "Copy Coordinates", "Utility");
@@ -185,6 +205,12 @@ public final class ModuleManager {
     public final Setting chatHistoryLimit = chatHistory.choice("limit", "Messages kept", 1000, new String[] {"500", "1000", "5000"}, 500, 1000, 5000);
     public final Setting entityRange = entityDistance.choice("range", "Distance", 48, new String[] {"16", "32", "48", "64"}, 16, 32, 48, 64);
     public final Setting entityPlayers = entityDistance.toggle("players", "Also hide players", false);
+    public final Setting foodSaturation = food.toggle("saturation", "Show saturation", true);
+    public final Setting arrowsAlways = arrows.toggle("always", "Always show", false);
+    public final Setting waterClarity = clearWater.choice("clarity", "Clarity", 1, new String[] {"More", "Full"}, 1, 2);
+    public final Setting hitColorValue = hitColor.choice("color", "Color", 0, new String[] {"Accent", "Blue", "Green", "White"}, 0, 1, 2, 3);
+    public final Setting quietVolume = quietMode.choice("volume", "Volume", 25, new String[] {"0%", "10%", "25%", "50%"}, 0, 10, 25, 50);
+    public final Setting reconnectDelay = autoReconnect.choice("delay", "Reconnect on its own", 0, new String[] {"Off", "5s", "10s", "30s"}, 0, 5, 10, 30);
     public final Setting dynamicFpsLimit = dynamicFps.choice("limit", "Unfocused limit", 15, new String[] {"5", "15", "30"}, 5, 15, 30);
 
     /** Settings for the whole client, opened from the sidebar. Not shown in the module list. */
@@ -197,8 +223,8 @@ public final class ModuleManager {
 
     /** False until the first-run hint about the menu key has been shown. */
     public boolean welcomed;
-    public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups);
-    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, blockOutline, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, chatHistory, particles, dynamicFps, entityDistance)).toList();
+    public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups, reach, combo, food, arrows);
+    public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, blockOutline, staticFov, clearWater, hitColor, freelook, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, chatHistory, quietMode, autoReconnect, particles, dynamicFps, entityDistance)).toList();
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
     private final Properties properties = new Properties();
 

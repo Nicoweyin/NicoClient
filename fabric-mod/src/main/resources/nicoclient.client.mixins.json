@@ -2,6 +2,6 @@
   "required": true,
   "package": "dev.nicoweyin.nicoclient.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["GameRendererMixin", "ScreenEffectRendererMixin", "ClientLevelMixin", "LightTextureMixin", "GuiMixin", "WeatherMixin", "ClientTimeMixin", "ChatTimestampMixin", "FramerateMixin", "KeyboardHandlerMixin", "MultiPlayerGameModeMixin", "EntityRenderDispatcherMixin", "BlockOutlineMixin", "ChatHistoryMixin"],
+  "client": ["GameRendererMixin", "ScreenEffectRendererMixin", "ClientLevelMixin", "LightTextureMixin", "GuiMixin", "WeatherMixin", "ClientTimeMixin", "ChatTimestampMixin", "FramerateMixin", "KeyboardHandlerMixin", "MultiPlayerGameModeMixin", "EntityRenderDispatcherMixin", "BlockOutlineMixin", "ChatHistoryMixin", "CameraMixin", "EntityTurnMixin", "FovModifierMixin", "WaterFogMixin", "OverlayTextureAccessor", "SoundVolumeMixin"],
   "injectors": { "defaultRequire": 1 }
 }
