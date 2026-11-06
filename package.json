@@ -1,7 +1,7 @@
 {
   "name": "nicoclient",
   "productName": "NicoClient",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "private": true,
   "description": "NicoClient by Nicoweyin — an independent Minecraft launcher",
   "main": "dist/main.js",
@@ -20,12 +20,26 @@
   "build": {
     "appId": "dev.nicoweyin.nicoclient",
     "productName": "NicoClient",
-    "publish": [{ "provider": "github", "owner": "Nicoweyin", "repo": "NicoClient", "releaseType": "release" }],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Nicoweyin",
+        "repo": "NicoClient",
+        "releaseType": "release"
+      }
+    ],
     "generateUpdatesFilesForAllChannels": true,
     "directories": {
       "output": "release"
     },
-    "extraResources": ["COPYRIGHT.md", "THIRD_PARTY_NOTICES.md", { "from": "fabric-mod/build/libs/nicoclient-fabric-0.1.0.jar", "to": "nicoclient-fabric-0.1.0.jar" }],
+    "extraResources": [
+      "COPYRIGHT.md",
+      "THIRD_PARTY_NOTICES.md",
+      {
+        "from": "fabric-mod/build/libs/nicoclient-fabric-0.1.0.jar",
+        "to": "nicoclient-fabric-0.1.0.jar"
+      }
+    ],
     "files": [
       "dist/**/*",
       "ui/**/*",

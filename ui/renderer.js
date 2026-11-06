@@ -1,5 +1,16 @@
 'use strict';
 
+// Short messages in the corner, so feedback shows wherever you are in the launcher.
+function toast(text, kind = 'good') {
+  const box = document.getElementById('toasts');
+  const item = document.createElement('div');
+  item.className = `toast ${kind}`;
+  item.textContent = text;
+  box.append(item);
+  while (box.childElementCount > 3) box.firstElementChild.remove();
+  setTimeout(() => { item.classList.add('leaving'); setTimeout(() => item.remove(), 300); }, 3200);
+}
+
 function showPage(page) {
   document.querySelectorAll('.nav, .page').forEach((element) => element.classList.remove('active'));
   document.querySelector(`.nav[data-page="${page}"]`).classList.add('active');
@@ -12,6 +23,13 @@ function showPage(page) {
   if (page === 'settings') void refreshSettings();
 }
 document.querySelectorAll('.nav').forEach((button) => button.addEventListener('click', () => showPage(button.dataset.page)));
+// Ctrl+1 to Ctrl+4 switch pages; / jumps to the mod search.
+document.addEventListener('keydown', event => {
+  const pages = ['home', 'mods', 'cosmetics', 'settings'];
+  if (event.ctrlKey && !event.shiftKey && !event.altKey && /^[1-4]$/.test(event.key)) { event.preventDefault(); showPage(pages[Number(event.key) - 1]); return; }
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+  if (event.key === '/' && !typing) { event.preventDefault(); showPage('mods'); document.getElementById('mod-query').focus(); }
+});
 document.getElementById('look-card').addEventListener('click', () => showPage('cosmetics'));
 
 // ---- Theme and game settings. The accent matches the in-game accent colors in Ui.java.
@@ -50,8 +68,13 @@ async function changeSetting(name, value, status) {
   try {
     gameSettings = await window.nicoClient.setSetting(name, value);
     status.textContent = 'Saved. A running game follows within two seconds.';
+    if (name.startsWith('module:')) {
+      const entry = QUICK_MODULES.find(([id]) => `module:${id}` === name);
+      toast(`${entry ? entry[1] : 'Module'} ${value ? 'on' : 'off'}`);
+    } else toast('Saved');
   } catch (error) {
     status.textContent = friendlyError(error, 'Could not save the setting.');
+    toast(status.textContent, 'bad');
   }
   renderSettings();
 }
@@ -132,15 +155,16 @@ const gameStatus = document.getElementById('game-status');
 playSide.addEventListener('click', () => { showPage('home'); play.click(); });
 play.addEventListener('click', async () => {
   if (play.disabled) return;
-  play.disabled = true; playSide.disabled = true;
+  play.disabled = true; playSide.disabled = true; play.classList.add('busy');
   gameStatus.textContent = 'Preparing the NicoClient profile…';
   try {
     const result = await window.nicoClient.play();
     gameStatus.textContent = result.ok ? 'Opening the Minecraft Launcher. Choose NicoClient Fabric 1.21.11 there and press Play. If the profile is missing, close the launcher and press PLAY again.' : result.message;
+    toast(result.ok ? 'Minecraft Launcher is opening' : 'Could not start: see the message under PLAY', result.ok ? 'good' : 'bad');
     void refreshMods();
     void refreshStatus();
   } catch { gameStatus.textContent = 'Could not prepare Minecraft.'; }
-  finally { play.disabled = false; playSide.disabled = false; }
+  finally { play.disabled = false; playSide.disabled = false; play.classList.remove('busy'); }
 });
 
 document.getElementById('get-launcher').addEventListener('click', () => { void window.nicoClient.openLauncherDownload(); });
@@ -148,6 +172,7 @@ async function refreshStatus(showHint = false) {
   try {
     const info = await window.nicoClient.launcherInfo();
     document.getElementById('app-version').textContent = info.version;
+    document.getElementById('news-title').textContent = `New in ${info.version}`;
     const ready = info.launcherInstalled && info.profile === 'ready';
     const tile = (id, text, good) => { const element = document.getElementById(id); element.textContent = text; element.closest('.status-tile').className = `status-tile ${good ? 'good' : 'warn'}`; };
     tile('tile-launcher', info.launcherInstalled ? 'Installed' : 'Not found', info.launcherInstalled);
@@ -232,14 +257,17 @@ async function refreshMods() {
       const label = document.createElement('div'); label.className = 'installed-name';
       const title = document.createElement('strong'); title.textContent = about.title;
       const detail = document.createElement('small'); detail.textContent = [about.detail, about.required ? 'Required' : mod.enabled ? '' : 'Disabled'].filter(Boolean).join(' · ');
-      label.append(title, detail); row.append(label);
+      label.append(title, detail);
+      const mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = monogram(about.title);
+      const left = document.createElement('div'); left.className = 'installed-left'; left.append(mono, label);
+      row.append(left);
       if (!mod.enabled) row.classList.add('disabled');
       const actions = document.createElement('div'); actions.className = 'button-row';
       const update = document.createElement('button'); update.className = 'secondary'; update.textContent = 'Update'; update.hidden = true;
       update.addEventListener('click', async () => {
         update.disabled = true; modProgress.hidden = false;
-        try { await window.nicoClient.updateMod(mod.name); modStatus.textContent = `${mod.name} updated. Restart Minecraft to load it.`; await refreshMods(); }
-        catch (error) { modStatus.textContent = friendlyError(error, 'Update failed.'); update.disabled = false; }
+        try { await window.nicoClient.updateMod(mod.name); modStatus.textContent = `${mod.name} updated. Restart Minecraft to load it.`; toast(`${about.title} updated`); await refreshMods(); }
+        catch (error) { modStatus.textContent = friendlyError(error, 'Update failed.'); toast(modStatus.textContent, 'bad'); update.disabled = false; }
         finally { modProgress.hidden = true; }
       });
       actions.append(update);
@@ -248,18 +276,27 @@ async function refreshMods() {
         update.hidden = result.status !== 'available';
         return result;
       });
-      for (const [caption, action] of about.required ? [] : [[mod.enabled ? 'Disable' : 'Enable', 'toggle'], ['Uninstall', 'remove']]) {
-        const button = document.createElement('button'); button.className = 'secondary'; button.textContent = caption;
-        button.addEventListener('click', async () => {
-          if (action === 'remove' && !confirm(`Uninstall ${about.title}? Other mods may depend on it.`)) return;
-          button.disabled = true;
+      if (about.required) {
+        const pill = document.createElement('span'); pill.className = 'pill'; pill.textContent = 'Required'; actions.append(pill);
+      } else {
+        const remove = document.createElement('button'); remove.className = 'secondary danger'; remove.textContent = 'Uninstall';
+        const toggle = document.createElement('input'); toggle.type = 'checkbox'; toggle.className = 'switch'; toggle.checked = mod.enabled;
+        toggle.setAttribute('aria-label', `${about.title} enabled`);
+        const run = async (action, control) => {
+          control.disabled = true;
           try {
             await window.nicoClient.changeMod(mod.name, action);
+            toast(action === 'remove' ? `${about.title} uninstalled` : `${about.title} ${mod.enabled ? 'disabled' : 'enabled'}`);
             await refreshMods();
-          } catch { modStatus.textContent = 'Mod operation failed. The file may be unmanaged, unavailable, or in use.'; }
-          finally { button.disabled = false; }
-        });
-        actions.append(button);
+          } catch {
+            modStatus.textContent = 'Mod operation failed. The file may be unmanaged, unavailable, or in use.';
+            toast('Mod operation failed', 'bad');
+            if (control === toggle) toggle.checked = mod.enabled;
+          } finally { control.disabled = false; }
+        };
+        remove.addEventListener('click', () => { if (confirm(`Uninstall ${about.title}? Other mods may depend on it.`)) void run('remove', remove); });
+        toggle.addEventListener('change', () => run('toggle', toggle));
+        actions.append(remove, toggle);
       }
       row.append(actions); container.append(row);
     }
@@ -274,6 +311,8 @@ async function runSearch() {
   const category = document.querySelector('.chip.active')?.dataset.category || '';
   modStatus.textContent = query ? 'Searching Modrinth…' : 'Loading mods…';
   const results = document.getElementById('mod-results');
+  // Placeholder cards keep the page steady while Modrinth answers.
+  results.replaceChildren(...Array.from({ length: 6 }, () => { const card = document.createElement('div'); card.className = 'mod-card skeleton'; return card; }));
   try {
     const [mods, installed] = await Promise.all([window.nicoClient.searchMods(query, category), window.nicoClient.installedProjects().catch(() => [])]);
     if (number !== searchNumber) return;
@@ -292,13 +331,13 @@ async function runSearch() {
       install.disabled = isInstalled;
       install.addEventListener('click', async () => {
         install.disabled = true; modProgress.hidden = false; modStatus.textContent = 'Resolving compatible dependencies…';
-        try { await window.nicoClient.installMod(mod.id); modStatus.textContent = `${mod.title} installed. Restart Minecraft to load mods.`; install.textContent = 'Installed'; await refreshMods(); }
-        catch (error) { modStatus.textContent = friendlyError(error, 'Installation failed. Check your connection and try again.'); install.disabled = false; }
+        try { await window.nicoClient.installMod(mod.id); modStatus.textContent = `${mod.title} installed. Restart Minecraft to load mods.`; install.textContent = 'Installed'; toast(`${mod.title} installed`); await refreshMods(); }
+        catch (error) { modStatus.textContent = friendlyError(error, 'Installation failed. Check your connection and try again.'); toast(modStatus.textContent, 'bad'); install.disabled = false; }
         finally { modProgress.hidden = true; }
       });
       card.append(install); results.append(card);
     }
-  } catch { if (number === searchNumber) modStatus.textContent = 'Could not reach Modrinth. Check your connection and try again.'; }
+  } catch { if (number === searchNumber) { results.replaceChildren(); modStatus.textContent = 'Could not reach Modrinth. Check your connection and try again.'; } }
 }
 let searchTimer;
 document.getElementById('mod-query').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 300); });

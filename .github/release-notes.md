@@ -5,6 +5,8 @@ Early development release of NicoClient, an independent launcher and Fabric mod 
 - Pick the accent color, HUD size and Server-safe mode in Settings. The color applies to the launcher and the game; a running game follows within two seconds.
 - Filter Modrinth mods by Performance, Utility, Decoration, Storage and Libraries.
 - **Server-safe mode** (on by default) pauses Freelook and Trajectories on public servers, where they are often not allowed. Singleplayer and LAN are not affected.
+- Installed mods switch on and off with a switch; short messages in the corner confirm every change.
+- Keys: Ctrl+1 to Ctrl+4 switch pages, / jumps to the mod search.
 - The in-game menu shows a small tile per module, its hotkey, and your face and name.
 
 **0.6.1:** a Cosmetics tab in the launcher. Pick capes, wings, halos and trails with picture previews; a running game takes them over within two seconds.

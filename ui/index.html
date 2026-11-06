@@ -11,6 +11,7 @@
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
   <div class="app">
     <aside class="sidebar">
       <div class="brand"><img src="../assets/icon.png" alt=""><div><strong>NicoClient</strong><small>BY NICOWEYIN</small></div></div>
@@ -58,6 +59,7 @@
           </div>
           <div class="home-side">
             <button class="panel look-card" id="look-card" aria-label="Open Cosmetics"><canvas id="home-look" width="160" height="200"></canvas><div><div class="eyebrow">YOUR LOOK</div><strong id="home-look-text">Nothing equipped</strong><span class="link">Customize →</span></div></button>
+            <div class="panel news"><div class="eyebrow">WHAT'S NEW</div><h2 id="news-title">NicoClient</h2><ul><li>A new launcher that follows your accent color</li><li>Quick modules right here on Home</li><li>Server-safe mode for public servers</li><li>Mod filters by category</li></ul></div>
             <div class="panel tips"><div class="eyebrow">KEYS</div><ul><li><kbd>Right Shift</kbd><span>NicoClient menu</span></li><li><kbd>C</kbd><span>Zoom</span></li><li><kbd>Left Alt</kbd><span>Freelook</span></li><li><kbd>Right click</kbd><span>Module settings</span></li></ul></div>
           </div>
         </div>
@@ -66,7 +68,7 @@
       <section class="page" id="mods">
         <div class="section-heading"><div class="eyebrow">MAKE IT YOURS</div><h1>Discover mods<span class="accent">.</span></h1><p>Fabric mods for Minecraft 1.21.11 from Modrinth. Dependencies install on their own.</p></div>
         <div class="panel">
-          <form id="mod-search-form" class="search-row"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input id="mod-query" type="search" placeholder="Search Modrinth mods" aria-label="Search mods"><button class="primary">Search</button></form>
+          <form id="mod-search-form" class="search-row"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input id="mod-query" type="search" placeholder="Search Modrinth mods   ( / )" aria-label="Search mods"><button class="primary">Search</button></form>
           <div class="chips" id="mod-categories" role="group" aria-label="Category">
             <button class="chip active" data-category="">Popular</button><button class="chip" data-category="optimization">Performance</button><button class="chip" data-category="utility">Utility</button><button class="chip" data-category="decoration">Decoration</button><button class="chip" data-category="storage">Storage</button><button class="chip" data-category="library">Libraries</button>
           </div>
