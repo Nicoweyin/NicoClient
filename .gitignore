@@ -39,3 +39,4 @@ tokens/
 /fabric-mod/.gradle/
 /fabric-mod/build/
 /fabric-mod/run/
+.claude/
