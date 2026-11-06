@@ -240,9 +240,12 @@ public final class ModuleManager {
 
     /** Your cosmetics, chosen in the Cosmetics screen. Not shown in the module list. */
     public final Module cosmetics = new Module("cosmetics", "Cosmetics", "Client");
-    public final Setting capeStyle = cosmetics.choice("cape", "Cape", 0, new String[] {"Off", "Nebula", "Flame", "Ocean", "Nico"}, 0, 1, 2, 3, 4);
-    public final Setting wingStyle = cosmetics.choice("wings", "Wings", 0, new String[] {"Off", "Angel", "Dragon", "Neon"}, 0, 1, 2, 3);
-    public final Setting haloStyle = cosmetics.choice("halo", "Halo", 0, new String[] {"Off", "Gold", "Accent"}, 0, 1, 2);
+    public final Setting capeStyle = cosmetics.choice("cape", "Cape", 0, Cosmetics.CAPES, indexes(Cosmetics.CAPES));
+    public final Setting wingStyle = cosmetics.choice("wings", "Wings", 0, Cosmetics.WINGS, indexes(Cosmetics.WINGS));
+    public final Setting haloStyle = cosmetics.choice("halo", "Halo", 0, Cosmetics.HALOS, indexes(Cosmetics.HALOS));
+    public final Setting trailStyle = cosmetics.choice("trail", "Trail", 0, Cosmetics.TRAILS, indexes(Cosmetics.TRAILS));
+
+    private static int[] indexes(String[] names) { return java.util.stream.IntStream.range(0, names.length).toArray(); }
     public final Setting wingFlap = cosmetics.toggle("flap", "Animate wings", true);
 
     /** False until the first-run hint about the menu key has been shown. */

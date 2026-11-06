@@ -8,9 +8,9 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-/** Pick a cape, wings and a halo, with a turning 3D preview of your own player. */
+/** Pick a cape, wings, halo and trail, with a turning 3D preview of your own player. */
 public final class CosmeticsScreen extends AnimatedScreen {
-    private static final int PREVIEW = 128, ROW = 36, CHIP = 16, FOOTER = 28;
+    private static final int PREVIEW = 128, ROW = 30, ROW_GAP = 4, ARROW = 20, FOOTER = 28;
     private final Screen parent;
     private float rotation = 150;
     private boolean dragging;
@@ -25,7 +25,9 @@ public final class CosmeticsScreen extends AnimatedScreen {
 
     private Row[] rows() {
         ModuleManager m = NicoClientMod.MODULES;
-        return new Row[] {new Row("Cape", m.capeStyle, Cosmetics.CAPES), new Row("Wings", m.wingStyle, Cosmetics.WINGS), new Row("Halo", m.haloStyle, Cosmetics.HALOS)};
+        return new Row[] {
+            new Row("Cape", m.capeStyle, Cosmetics.CAPES), new Row("Wings", m.wingStyle, Cosmetics.WINGS),
+            new Row("Halo", m.haloStyle, Cosmetics.HALOS), new Row("Trail", m.trailStyle, Cosmetics.TRAILS)};
     }
 
     private int panelWidth() { return Math.min(width - 16, 420); }
@@ -34,18 +36,16 @@ public final class CosmeticsScreen extends AnimatedScreen {
     private int top() { return (height - panelHeight()) / 2; }
     private int optionsX() { return left() + PREVIEW + 18; }
     private int optionsWidth() { return panelWidth() - PREVIEW - 26; }
-    private float rowY(int index) { return top() + 32 + index * (ROW + 4); }
-    private float flapY() { return rowY(3); }
+    private float rowY(int index) { return top() + 32 + index * (ROW + ROW_GAP); }
+    private float flapY() { return rowY(4); }
     private float backY() { return top() + panelHeight() - 26; }
+    private int pickerWidth() { return Math.min(150, optionsWidth() - 70); }
+    private float pickerX() { return optionsX() + optionsWidth() - 6 - pickerWidth(); }
+    private float nextX() { return pickerX() + pickerWidth() - ARROW; }
 
-    private float chipX(int option, int count) { return optionsX() + 8 + option * chipWidth(count); }
-    private float chipWidth(int count) { return (optionsWidth() - 16) / (float) count; }
-
-    /** For the client test. */
-    public int[] chipCenter(int row, int option) {
-        int count = rows()[row].names().length;
-        return new int[] {Math.round(chipX(option, count) + chipWidth(count) / 2), Math.round(rowY(row) + 15 + CHIP / 2f)};
-    }
+    /** For the client test: centers of a row's previous and next arrows. */
+    public int[] previousCenter(int row) { return new int[] {Math.round(pickerX() + ARROW / 2f), Math.round(rowY(row) + ROW / 2f)}; }
+    public int[] nextCenter(int row) { return new int[] {Math.round(nextX() + ARROW / 2f), Math.round(rowY(row) + ROW / 2f)}; }
 
     public void setRotation(float degrees) { rotation = degrees; }
 
@@ -58,7 +58,7 @@ public final class CosmeticsScreen extends AnimatedScreen {
         String note = "Only you can see them";
         Ui.text(g, note, left + panelW - 14 - Ui.width(note), top + 12, Ui.alpha(Ui.MUTED, alpha));
 
-        // Preview: a soft spotlight behind the player, who slowly turns unless you drag.
+        // Preview: a soft spotlight under the player, who slowly turns unless you drag.
         int px = left + 8, py = top + 30, ph = panelH - 30 - FOOTER - 6;
         Ui.rounded(g, px, py, PREVIEW, ph, 9, Ui.alpha(Ui.SIDEBAR, alpha));
         Ui.rounded(g, px + PREVIEW / 2f - 34, py + ph - 22, 68, 12, 6, Ui.alpha(Ui.mix(Ui.SIDEBAR, Ui.accent(), 0.35f), alpha));
@@ -69,27 +69,34 @@ public final class CosmeticsScreen extends AnimatedScreen {
         Ui.text(g, hint, px + (PREVIEW - Ui.width(hint)) / 2f, py + ph - 9, Ui.alpha(Ui.MUTED, alpha * 0.8f));
 
         Row[] rows = rows();
-        int ox = optionsX(), ow = optionsWidth();
+        int ox = optionsX(), ow = optionsWidth(), pw = pickerWidth();
+        float pxl = pickerX(), nx = nextX();
         for (int r = 0; r < rows.length; r++) {
             Row row = rows[r];
             float y = rowY(r);
+            int index = row.setting().index(), count = row.names().length;
             Ui.rounded(g, ox, y, ow, ROW, 8, Ui.alpha(Ui.SURFACE, alpha));
-            Ui.text(g, row.label(), ox + 9, y + 5, Ui.alpha(Ui.TEXT, alpha));
-            int count = row.names().length;
-            float cw = chipWidth(count);
-            Ui.rounded(g, ox + 7, y + 14, ow - 14, CHIP + 2, 6, Ui.alpha(Ui.SIDEBAR, alpha));
-            float position = animate("chip:" + r, chipX(row.setting().index(), count), 20);
-            Ui.rounded(g, position + 1, y + 15, cw - 2, CHIP, 5, Ui.alpha(Ui.accent(), alpha));
-            for (int o = 0; o < count; o++) {
-                String name = Ui.fit(row.names()[o], (int) cw - 4);
-                boolean hover = Ui.inside(mouseX, mouseY, chipX(o, count), y + 14, cw, CHIP + 2);
-                int color = o == row.setting().index() ? Ui.TEXT : hover ? Ui.mix(Ui.MUTED, Ui.TEXT, 0.6f) : Ui.MUTED;
-                Ui.text(g, name, chipX(o, count) + (cw - Ui.width(name)) / 2, y + 19, Ui.alpha(color, alpha));
+            Ui.text(g, row.label(), ox + 10, y + 11, Ui.alpha(Ui.TEXT, alpha));
+            Ui.rounded(g, pxl, y + 4, pw, ROW - 8, 6, Ui.alpha(Ui.SIDEBAR, alpha));
+            for (int side = 0; side < 2; side++) {
+                float ax = side == 0 ? pxl : nx;
+                float hover = animate("arrow:" + r + side, Ui.inside(mouseX, mouseY, ax, y + 4, ARROW, ROW - 8) ? 1 : 0, 18);
+                Ui.rounded(g, ax + 2, y + 6, ARROW - 4, ROW - 12, 5, Ui.alpha(Ui.mix(Ui.SIDEBAR, Ui.accent(), 0.25f + hover * 0.6f), alpha));
+                String arrow = side == 0 ? "‹" : "›";
+                Ui.text(g, arrow, ax + (ARROW - Ui.width(arrow)) / 2f, y + 11, Ui.alpha(Ui.TEXT, alpha));
+            }
+            String name = row.names()[index];
+            int nameColor = index == 0 ? Ui.MUTED : Ui.accentLight();
+            Ui.text(g, Ui.fit(name, pw - ARROW * 2 - 6), pxl + (pw - Ui.width(Ui.fit(name, pw - ARROW * 2 - 6))) / 2f, y + 9, Ui.alpha(nameColor, alpha));
+            // Small dots show where you are in the list.
+            float dots = Math.min(count, 12) * 4f, dx = pxl + (pw - dots) / 2f + 1;
+            for (int d = 0; d < Math.min(count, 12); d++) {
+                Ui.rounded(g, dx + d * 4, y + ROW - 9, 2, 2, 1, Ui.alpha(d == index ? Ui.accentLight() : Ui.OFF, alpha));
             }
         }
         float fy = flapY();
         Ui.rounded(g, ox, fy, ow, 22, 8, Ui.alpha(Ui.SURFACE, alpha));
-        Ui.text(g, "Animate wings", ox + 9, fy + 7, Ui.alpha(Ui.TEXT, alpha));
+        Ui.text(g, "Animate wings", ox + 10, fy + 7, Ui.alpha(Ui.TEXT, alpha));
         Ui.toggle(g, ox + ow - 32, fy + 5, animate("flap", NicoClientMod.MODULES.wingFlap.on() ? 1 : 0, 16), alpha);
 
         button(g, "Back", left + 8, backY(), panelW - 16, 20, mouseX, mouseY);
@@ -108,6 +115,12 @@ public final class CosmeticsScreen extends AnimatedScreen {
         g.submitEntityRenderState(state, size, new Vector3f(0, state.boundingBoxHeight / 2 + 0.0625f, 0), pose, camera, x, y + 4, x + w, y + h - 10);
     }
 
+    private static void step(ModuleManager.Setting setting, int count, int by) {
+        setting.selectIndex(Math.floorMod(setting.index() + by, count));
+        NicoClientMod.MODULES.save();
+        Ui.click();
+    }
+
     @Override public boolean mouseClicked(MouseButtonEvent e, boolean doubled) {
         if (isClosing()) return true;
         if (e.button() == 1) { onClose(); return true; }
@@ -119,15 +132,12 @@ public final class CosmeticsScreen extends AnimatedScreen {
         }
         Row[] rows = rows();
         for (int r = 0; r < rows.length; r++) {
+            float y = rowY(r);
             int count = rows[r].names().length;
-            for (int o = 0; o < count; o++) {
-                if (Ui.inside(e.x(), e.y(), chipX(o, count), rowY(r) + 14, chipWidth(count), CHIP + 2)) {
-                    rows[r].setting().selectIndex(o);
-                    NicoClientMod.MODULES.save();
-                    Ui.click();
-                    return true;
-                }
-            }
+            if (Ui.inside(e.x(), e.y(), pickerX(), y + 4, ARROW, ROW - 8)) { step(rows[r].setting(), count, -1); return true; }
+            if (Ui.inside(e.x(), e.y(), nextX(), y + 4, ARROW, ROW - 8)) { step(rows[r].setting(), count, 1); return true; }
+            // Clicking the name moves forward too, the quickest way to browse.
+            if (Ui.inside(e.x(), e.y(), pickerX(), y + 4, pickerWidth(), ROW - 8)) { step(rows[r].setting(), count, 1); return true; }
         }
         if (Ui.inside(e.x(), e.y(), optionsX(), flapY(), optionsWidth(), 22)) {
             NicoClientMod.MODULES.wingFlap.flip();
@@ -136,6 +146,14 @@ public final class CosmeticsScreen extends AnimatedScreen {
             return true;
         }
         if (Ui.inside(e.x(), e.y(), left() + 8, backY(), panelWidth() - 16, 20)) { Ui.click(); onClose(); return true; }
+        return false;
+    }
+
+    @Override public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
+        Row[] rows = rows();
+        for (int r = 0; r < rows.length; r++) {
+            if (Ui.inside(x, y, optionsX(), rowY(r), optionsWidth(), ROW)) { step(rows[r].setting(), rows[r].names().length, vertical < 0 ? 1 : -1); return true; }
+        }
         return false;
     }
 

@@ -91,3 +91,4 @@
 ## 2026-11-06: cosmetics
 - `gradle runClientGameTest` passed: the Cosmetics button in the menu opens the cosmetics screen, real clicks pick a cape, wings and halo, and screenshots of the preview and of third-person front and back views show Angel wings with a gold halo, Neon wings with the Nico cape, and Dragon wings with the Flame cape.
 - Not tested: an elytra together with a cape, and cosmetics on a multiplayer server (other players cannot see them).
+- More cosmetics: the cosmetics screen now uses arrow pickers (next and previous arrows clicked in the client test, including wrapping round), and screenshots show Aurora, Sakura, Rainbow, Gold and Lava capes with Butterfly, Phoenix, Crystal and Bat wings. The trail spawned particles while walking, but they were not visible in the underwater screenshot, so the look of trails is unchecked.

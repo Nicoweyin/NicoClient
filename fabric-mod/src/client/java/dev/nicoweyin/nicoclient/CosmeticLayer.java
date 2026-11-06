@@ -29,7 +29,7 @@ public final class CosmeticLayer extends RenderLayer<AvatarRenderState, PlayerMo
             boolean flying = state.fallFlyingTimeInTicks > 0 || client.player.getAbilities().flying;
             float speed = flying ? 0.45f : 0.12f, range = flying ? 0.35f : 0.12f;
             float flap = NicoClientMod.MODULES.wingFlap.on() ? (float) Math.sin(state.ageInTicks * speed) * range : 0;
-            int wingLight = wings == 3 ? LightTexture.FULL_BRIGHT : light;
+            int wingLight = Cosmetics.glowingWings(wings) ? LightTexture.FULL_BRIGHT : light;
             var type = RenderTypes.entityCutoutNoCull(Cosmetics.wingTexture(wings));
             for (int side = -1; side <= 1; side += 2) {
                 pose.pushPose();

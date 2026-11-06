@@ -12,6 +12,7 @@ import dev.nicoweyin.nicoclient.Reconnect;
 import dev.nicoweyin.nicoclient.ArmorWarning;
 import dev.nicoweyin.nicoclient.WaypointScreen;
 import dev.nicoweyin.nicoclient.CosmeticsScreen;
+import dev.nicoweyin.nicoclient.Trails;
 import dev.nicoweyin.nicoclient.Waypoints;
 import net.minecraft.client.gui.GuiGraphics;
 import dev.nicoweyin.nicoclient.mixin.OverlayTextureAccessor;
@@ -649,14 +650,20 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
             context.waitTicks(20);
             context.runOnClient(client -> check(client.screen instanceof CosmeticsScreen, "the Cosmetics button opens the cosmetics screen"));
-            for (int[] pick : new int[][] {{0, 1}, {1, 1}, {2, 1}}) {
-                int[] chip = context.computeOnClient(client -> ((CosmeticsScreen) client.screen).chipCenter(pick[0], pick[1]));
-                moveTo(context, chip[0], chip[1]);
+            for (int row = 0; row < 3; row++) {
+                int pickRow = row;
+                int[] arrow = context.computeOnClient(client -> ((CosmeticsScreen) client.screen).nextCenter(pickRow));
+                moveTo(context, arrow[0], arrow[1]);
                 context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
                 context.waitTicks(3);
             }
+            int[] previous = context.computeOnClient(client -> ((CosmeticsScreen) client.screen).previousCenter(3));
+            moveTo(context, previous[0], previous[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(m.trailStyle.get() == 5, "the previous arrow wraps from Off to the last trail, Snow"));
             context.runOnClient(client -> {
-                check(m.capeStyle.get() == 1 && m.wingStyle.get() == 1 && m.haloStyle.get() == 1, "clicking chips picks Nebula cape, Angel wings and Gold halo");
+                check(m.capeStyle.get() == 1 && m.wingStyle.get() == 1 && m.haloStyle.get() == 1, "the next arrows pick Nebula cape, Angel wings and Gold halo");
                 ((CosmeticsScreen) client.screen).setRotation(150);
             });
             context.waitTicks(5);
@@ -671,6 +678,19 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.runOnClient(client -> { m.capeStyle.set(2); m.wingStyle.set(2); });
             context.waitTicks(10);
             context.takeScreenshot("nicoclient-16d-cosmetics-back-dragon");
+            String[][] looks = {{"5", "4", "3"}, {"6", "5", "4"}, {"7", "6", "1"}, {"9", "7", "2"}, {"11", "5", "1"}};
+            for (String[] look : looks) {
+                context.runOnClient(client -> { m.capeStyle.set(Integer.parseInt(look[0])); m.wingStyle.set(Integer.parseInt(look[1])); m.haloStyle.set(Integer.parseInt(look[2])); });
+                context.waitTicks(6);
+                context.takeScreenshot("nicoclient-16e-look-cape" + look[0] + "-wings" + look[1]);
+            }
+            // Trail: walking forward leaves particles.
+            context.runOnClient(client -> { m.trailStyle.set(1); Trails.spawned = 0; });
+            context.getInput().holdKey(GLFW.GLFW_KEY_W);
+            context.waitTicks(12);
+            context.takeScreenshot("nicoclient-16f-trail-hearts");
+            context.getInput().releaseKey(GLFW.GLFW_KEY_W);
+            context.runOnClient(client -> { check(Trails.spawned > 2, "walking leaves trail particles: " + Trails.spawned); m.trailStyle.set(0); });
             context.runOnClient(client -> {
                 client.options.setCameraType(CameraType.FIRST_PERSON);
                 m.capeStyle.set(0); m.wingStyle.set(0); m.haloStyle.set(0); m.save();

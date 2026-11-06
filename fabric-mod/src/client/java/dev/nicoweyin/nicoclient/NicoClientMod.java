@@ -60,6 +60,7 @@ public final class NicoClientMod implements ClientModInitializer {
             Pickups.tick(client);
             Combat.tick(client);
             ArmorWarning.tick(client);
+            Trails.tick(client);
             Freelook.tick(client);
             applyHitColor(client);
             applyQuietMode(client);
