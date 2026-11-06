@@ -41,3 +41,7 @@ The Fabric mod bundles the Inter typeface (`Inter-Regular.ttf`, version 4.1), Co
 ## Other third-party rights
 
 Minecraft, Mojang, Microsoft, Fabric, Modrinth, Electron, and their names, logos, software, and other assets belong to their respective owners. NicoClient is independent and is not an official Minecraft product or affiliated with Mojang or Microsoft. Mods and other content obtained through third-party services are subject to their respective owners' terms; they are not covered by NicoClient's copyright notice.
+
+## Cosmetics
+
+Every cape, wing, halo and trail preview in NicoClient is drawn by NicoClient's own code at runtime. No textures from Minecraft, Mojang, Microsoft or other clients are included. Trails use Minecraft's built-in particles, which come from the player's own copy of the game. Cosmetics are free; Mojang's usage guidelines do not allow selling them.

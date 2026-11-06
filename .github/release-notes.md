@@ -1,5 +1,7 @@
 Early development release of NicoClient, an independent launcher and Fabric mod for Minecraft Java 1.21.11.
 
+**New in 0.6.1:** a Cosmetics tab in the launcher. Pick capes, wings, halos and trails with picture previews; a running game takes them over within two seconds.
+
 **New in 0.6.0: Cosmetics.** Open the menu with Right Shift and press Cosmetics. A 3D preview of your player turns while you choose.
 - 11 capes: Nebula, Flame, Ocean, Nico, Aurora, Sakura, Rainbow, Ice, Gold, Carbon, Lava.
 - 7 wings: Angel, Dragon, Neon, Butterfly, Phoenix, Crystal, Bat.
