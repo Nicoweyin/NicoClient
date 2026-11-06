@@ -103,6 +103,8 @@ public final class ModuleManager {
             this.enabled = enabledByDefault;
         }
         public String description() { return DESCRIPTIONS.getOrDefault(id, ""); }
+        /** On, and not paused by Server-safe mode. */
+        public boolean active() { return enabled && !ServerSafe.paused(this); }
         Setting toggle(String id, String label, boolean fallback) {
             Setting setting = new Setting(id, label, new String[0], new int[] {0, 1}, fallback ? 1 : 0);
             settings.add(setting);
@@ -237,6 +239,7 @@ public final class ModuleManager {
     public final Setting hudBackground = client.choice("hudbackground", "HUD background", 2, new String[] {"Off", "Soft", "Strong"}, 0, 1, 2);
     public final Setting hudText = client.choice("hudtext", "HUD text color", 0, new String[] {"White", "Accent", "Cyan", "Yellow"}, 0, 1, 2, 3);
     public final Setting clickSounds = client.toggle("sounds", "Menu click sounds", true);
+    public final Setting serverSafe = client.toggle("serversafe", "Server-safe mode", true);
 
     /** Your cosmetics, chosen in the Cosmetics screen. Not shown in the module list. */
     public final Module cosmetics = new Module("cosmetics", "Cosmetics", "Client");
@@ -252,6 +255,8 @@ public final class ModuleManager {
     public boolean welcomed;
     public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups, reach, combo, food, arrows, target);
     public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, blockOutline, staticFov, clearWater, hitColor, freelook, noPumpkin, tabPing, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, chatHistory, quietMode, autoReconnect, waypoints, armorWarning, particles, dynamicFps, entityDistance)).toList();
+    /** Modules many public servers do not allow; Server-safe mode pauses them there. */
+    public final List<Module> serverRestricted = List.of(freelook, trajectories);
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
     private final Properties properties = new Properties();
     /** When the settings file was last read or written by the game, to notice changes made by the launcher. */
@@ -261,8 +266,8 @@ public final class ModuleManager {
         try { return Files.getLastModifiedTime(path).toMillis(); } catch (IOException e) { return 0; }
     }
 
-    /** The launcher's Cosmetics tab writes the settings file; a running game takes the new cosmetics from it. */
-    public boolean reloadCosmeticsIfChanged() {
+    /** The launcher writes the settings file (cosmetics, quick modules, theme); a running game takes the changes from it. */
+    public boolean reloadIfChanged() {
         long time = fileTime();
         if (time == 0 || time == knownFileTime) return false;
         knownFileTime = time;
@@ -272,11 +277,11 @@ public final class ModuleManager {
         } catch (IOException | IllegalArgumentException e) {
             return false;
         }
-        for (Setting setting : cosmetics.settings) {
-            String key = cosmetics.id + "." + setting.id, value = fresh.getProperty(key);
-            if (value == null) continue;
-            properties.setProperty(key, value);
-            loadSetting(key, setting);
+        properties.putAll(fresh);
+        for (Module m : withClient()) {
+            String enabled = fresh.getProperty(m.id + ".enabled");
+            if (enabled != null) m.enabled = Boolean.parseBoolean(enabled);
+            for (Setting setting : m.settings) loadSetting(m.id + "." + setting.id, setting);
         }
         return true;
     }

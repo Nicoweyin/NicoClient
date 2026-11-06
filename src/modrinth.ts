@@ -33,9 +33,13 @@ async function fileHash(file: string, algorithm: 'sha1' | 'sha512'): Promise<str
   for await (const chunk of createReadStream(file)) hash.update(chunk as Buffer);
   return hash.digest('hex');
 }
-export async function searchMods(query: string): Promise<any[]> {
+/** Modrinth categories the Mods page offers as filters. */
+export const MOD_CATEGORIES = ['optimization', 'utility', 'decoration', 'storage', 'library'];
+export async function searchMods(query: string, category = ''): Promise<any[]> {
   if (typeof query !== 'string' || query.length > 120) throw new Error('Invalid search query.');
-  const params = new URLSearchParams({ query, limit: '24', index: query.trim() ? 'relevance' : 'downloads', facets: JSON.stringify([['project_type:mod'], ['categories:fabric'], [`versions:${GAME}`]]) });
+  if (category && !MOD_CATEGORIES.includes(category)) throw new Error('Unknown category.');
+  const facets = [['project_type:mod'], ['categories:fabric'], [`versions:${GAME}`], ...(category ? [[`categories:${category}`]] : [])];
+  const params = new URLSearchParams({ query, limit: '24', index: query.trim() ? 'relevance' : 'downloads', facets: JSON.stringify(facets) });
   const result = await json(`/search?${params}`);
   return (result.hits || []).map((hit: any) => ({ id: hit.project_id, title: hit.title, description: hit.description, downloads: hit.downloads, icon: typeof hit.icon_url === 'string' && hit.icon_url.startsWith('https://cdn.modrinth.com/') ? hit.icon_url : '' }));
 }

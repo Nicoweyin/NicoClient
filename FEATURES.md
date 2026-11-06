@@ -61,6 +61,9 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 48. [x] Theme accent selection (client test)
 49. [x] HUD scale settings (client test at 125%)
 50. [ ] Configuration profiles
+51. [x] Server-safe mode: pauses Freelook and Trajectories on public servers, on by default (client test with a simulated server; not tried on a real server)
+52. [x] Module rows show a category monogram, their hotkey and why a module is paused; the sidebar shows your face and name (screenshots reviewed)
+53. [x] The launcher switches quick modules and sets accent color, HUD size and Server-safe mode; a running game follows within two seconds (launcher clicks and client test)
 
 ## Additional requested modules (planned)
 

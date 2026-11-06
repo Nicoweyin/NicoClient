@@ -62,7 +62,8 @@ public final class NicoClientMod implements ClientModInitializer {
             Combat.tick(client);
             ArmorWarning.tick(client);
             Trails.tick(client);
-            if (++configChecks % 40 == 0) MODULES.reloadCosmeticsIfChanged();
+            if (++configChecks % 40 == 0) MODULES.reloadIfChanged();
+            ServerSafe.tick(client);
             Freelook.tick(client);
             applyHitColor(client);
             applyQuietMode(client);

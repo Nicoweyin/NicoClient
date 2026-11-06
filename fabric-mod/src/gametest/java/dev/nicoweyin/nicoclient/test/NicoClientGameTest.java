@@ -8,6 +8,7 @@ import dev.nicoweyin.nicoclient.NicoScreen;
 import dev.nicoweyin.nicoclient.Pickups;
 import dev.nicoweyin.nicoclient.Combat;
 import dev.nicoweyin.nicoclient.Freelook;
+import dev.nicoweyin.nicoclient.ServerSafe;
 import dev.nicoweyin.nicoclient.Reconnect;
 import dev.nicoweyin.nicoclient.ArmorWarning;
 import dev.nicoweyin.nicoclient.WaypointScreen;
@@ -108,7 +109,8 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.takeScreenshot("nicoclient-5-zoom");
             context.getInput().releaseKey(NicoClientMod.zoomKey);
 
-            // The menu must open with its real key and fully finish its animation.
+            // The menu must open with its real key and fully finish its animation. A hotkey shows as a chip on its row.
+            context.runOnClient(client -> m.keys.hotkey = GLFW.GLFW_KEY_K);
             context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT_SHIFT);
             context.waitTicks(15);
             context.runOnClient(client -> check(client.screen instanceof NicoScreen screen && screen.isFullyOpen(), "Right Shift opens the menu"));
@@ -491,8 +493,28 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.waitTicks(3);
             context.runOnClient(client -> {
                 check(!Freelook.active && client.options.getCameraType() == CameraType.FIRST_PERSON, "releasing Freelook returns to first person");
-                m.freelook.enabled = false;
             });
+
+            // Server-safe mode: on a public server Freelook stays switched on but does nothing, and the menu says why.
+            context.runOnClient(client -> { m.keys.hotkey = -1; m.serverSafe.set(1); ServerSafe.simulateServer = true; });
+            context.waitTicks(2);
+            context.runOnClient(client -> check(m.freelook.enabled && !m.freelook.active(), "Server-safe mode pauses Freelook on a public server"));
+            context.getInput().holdKey(GLFW.GLFW_KEY_LEFT_ALT);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(!Freelook.active && client.options.getCameraType() == CameraType.FIRST_PERSON, "the Freelook key does nothing while paused"));
+            context.getInput().releaseKey(GLFW.GLFW_KEY_LEFT_ALT);
+            context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT_SHIFT);
+            context.waitTicks(15);
+            context.getInput().typeChars("free");
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-14d-server-safe-menu");
+            context.runOnClient(client -> client.setScreen(null));
+            context.runOnClient(client -> { m.serverSafe.set(0); });
+            context.waitTicks(2);
+            context.runOnClient(client -> check(m.freelook.active(), "turning Server-safe mode off brings Freelook back"));
+            context.runOnClient(client -> { m.serverSafe.set(1); ServerSafe.simulateServer = false; });
+            context.waitTicks(2);
+            context.runOnClient(client -> { check(m.freelook.active(), "Freelook works in singleplayer with Server-safe mode on"); m.freelook.enabled = false; ServerSafe.simulateServer = null; });
 
             // Quiet Mode scales every sound category without touching Minecraft's volume options.
             context.runOnClient(client -> {
@@ -691,12 +713,15 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                     Path file = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
                     Thread.sleep(20);
                     String text = Files.readString(file).replaceAll("(?m)^cosmetics\\.cape=.*$", "cosmetics.cape=8");
+                    // The launcher's quick modules switch modules the same way.
+                    text = text.replaceAll("(?m)^nofog[.]enabled=.*$", "nofog.enabled=true");
                     Files.writeString(file, text);
                     Files.setLastModifiedTime(file, java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis() + 1000));
                 } catch (Exception e) { throw new AssertionError(e); }
             });
             context.waitTicks(45);
             context.runOnClient(client -> check(m.capeStyle.get() == 8, "a cape chosen in the launcher reaches the running game, got " + m.capeStyle.get()));
+            context.runOnClient(client -> { check(m.noFog.enabled, "a module switched on in the launcher reaches the running game"); m.noFog.enabled = false; m.save(); });
 
             // Trail: walking forward leaves particles.
             context.runOnClient(client -> { m.trailStyle.set(1); Trails.spawned = 0; });

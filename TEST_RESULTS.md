@@ -98,3 +98,9 @@
 - A bug was found and fixed: two quick clicks could overwrite each other in the settings file. Writes now run one after another; a unit test covers four writes at once.
 - `gradle runClientGameTest`: a cape written into the settings file from outside reached the running game within two seconds.
 - Not tested: the installed launcher build and a game started from the official launcher while switching cosmetics.
+
+## 2026-11-06: launcher redesign and Server-safe mode
+- `gradle runClientGameTest` passed: with a public server simulated, Freelook stays switched on but the Freelook key does nothing, and the menu row says "Paused here by Server-safe mode" (screenshot reviewed); Freelook works again with Server-safe mode off and in singleplayer. A module switched on in the settings file from outside reached the running game. Menu screenshots show the new monogram tiles, a hotkey chip and the profile card with face and name.
+- The launcher was started with a debug port at 1280x820 and 960x720: all four pages showed no script errors and no sideways scrolling. Real clicks switched Fullbright on and off, chose the pink accent (the whole launcher turned pink), switched Server-safe mode, set the HUD size to 125%, and the Performance filter on the Mods page listed Sodium, Iris, Entity Culling and FerriteCore. The owner's settings file was backed up and restored byte for byte.
+- `npm test`: 18 tests pass, including a new one that only listed settings can be written and that other lines stay.
+- Not tested: Server-safe mode on a real public server, and the installed launcher build.

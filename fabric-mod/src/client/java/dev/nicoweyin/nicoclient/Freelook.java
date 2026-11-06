@@ -12,7 +12,7 @@ public final class Freelook {
     private Freelook() {}
 
     public static void tick(Minecraft client) {
-        boolean held = NicoClientMod.MODULES.freelook.enabled && client.player != null && client.screen == null
+        boolean held = NicoClientMod.MODULES.freelook.active() && client.player != null && client.screen == null
                 && NicoClientMod.freelookKey != null && NicoClientMod.freelookKey.isDown();
         if (held && !active) {
             active = true;

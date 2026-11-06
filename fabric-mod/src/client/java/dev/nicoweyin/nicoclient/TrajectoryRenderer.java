@@ -31,7 +31,7 @@ public final class TrajectoryRenderer {
     private static void extract() {
         Minecraft client = Minecraft.getInstance();
         LocalPlayer player = client.player;
-        if (!NicoClientMod.MODULES.trajectories.enabled || player == null || client.level == null) {
+        if (!NicoClientMod.MODULES.trajectories.active() || player == null || client.level == null) {
             prediction = new Prediction(List.of(), false, false); return;
         }
         ItemStack stack = player.getMainHandItem();

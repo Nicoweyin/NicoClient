@@ -1,15 +1,114 @@
 'use strict';
 
-document.querySelectorAll('.nav').forEach((button) => {
-  button.addEventListener('click', () => {
-    document.querySelectorAll('.nav, .page').forEach((element) => element.classList.remove('active'));
-    button.classList.add('active');
-    document.getElementById(button.dataset.page).classList.add('active');
-    if (button.dataset.page === 'mods') void openModsPage();
-    if (button.dataset.page === 'home') void refreshStatus();
-    if (button.dataset.page === 'cosmetics') void openCosmeticsPage();
+function showPage(page) {
+  document.querySelectorAll('.nav, .page').forEach((element) => element.classList.remove('active'));
+  document.querySelector(`.nav[data-page="${page}"]`).classList.add('active');
+  document.getElementById(page).classList.add('active');
+  document.getElementById('page-title').textContent = page.toUpperCase();
+  window.scrollTo(0, 0);
+  if (page === 'mods') void openModsPage();
+  if (page === 'home') { void refreshStatus(); void refreshSettings(); void renderHomeLook(); }
+  if (page === 'cosmetics') void openCosmeticsPage();
+  if (page === 'settings') void refreshSettings();
+}
+document.querySelectorAll('.nav').forEach((button) => button.addEventListener('click', () => showPage(button.dataset.page)));
+document.getElementById('look-card').addEventListener('click', () => showPage('cosmetics'));
+
+// ---- Theme and game settings. The accent matches the in-game accent colors in Ui.java.
+const ACCENT_COLORS = [['Violet', '#736af5'], ['Blue', '#4c8dff'], ['Cyan', '#22b8cf'], ['Green', '#34c77b'], ['Pink', '#ec5fa6']];
+const QUICK_MODULES = [
+  ['fps', 'FPS Counter', 'Frames per second'], ['keys', 'Keystrokes', 'The movement keys you press'],
+  ['coords', 'Coordinates', 'Your position in the world'], ['armor', 'Armor HUD', 'Armor and durability'],
+  ['zoom', 'Zoom', 'Hold C to look closer'], ['fullbright', 'Fullbright', 'See clearly in the dark'],
+  ['crosshair', 'Custom Crosshair', 'Your own crosshair style'], ['togglesprint', 'Toggle Sprint', 'Press once to keep sprinting'],
+  ['waypoints', 'Waypoints', 'Save places and blocks'], ['nofog', 'No Fog', 'Removes distance fog'],
+  ['particles', 'Reduced Particles', 'Fewer particles, more FPS'], ['dynamicfps', 'Dynamic FPS', 'Saves power in the background']
+];
+const HUD_SCALES = [75, 100, 125, 150];
+let gameSettings = null;
+
+function lighten(hex, amount) {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const channel = shift => Math.round(((value >> shift) & 255) + (255 - ((value >> shift) & 255)) * amount);
+  return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
+}
+function applyTheme(accent) {
+  const hex = (ACCENT_COLORS[accent] || ACCENT_COLORS[0])[1];
+  const value = Number.parseInt(hex.slice(1), 16);
+  const root = document.documentElement.style;
+  root.setProperty('--accent', hex);
+  root.setProperty('--accent-light', lighten(hex, 0.4));
+  root.setProperty('--accent-rgb', `${value >> 16 & 255},${value >> 8 & 255},${value & 255}`);
+}
+function monogram(name) {
+  const words = name.split(/\s+/);
+  return words.length > 1 ? (words[0][0] + words[1][0]).toUpperCase() : name.slice(0, 2);
+}
+const settingsStatus = document.getElementById('settings-status');
+const quickStatus = document.getElementById('quick-status');
+async function changeSetting(name, value, status) {
+  try {
+    gameSettings = await window.nicoClient.setSetting(name, value);
+    status.textContent = 'Saved. A running game follows within two seconds.';
+  } catch (error) {
+    status.textContent = friendlyError(error, 'Could not save the setting.');
+  }
+  renderSettings();
+}
+function renderSettings() {
+  if (!gameSettings) return;
+  applyTheme(gameSettings.accent);
+  const quick = document.getElementById('quick-modules');
+  if (!quick.childElementCount) {
+    for (const [id, name, detail] of QUICK_MODULES) {
+      const tile = document.createElement('button');
+      tile.className = 'quick'; tile.dataset.module = id;
+      const mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = monogram(name);
+      const text = document.createElement('div');
+      const title = document.createElement('strong'); title.textContent = name;
+      const small = document.createElement('small'); small.textContent = detail;
+      text.append(title, small);
+      const toggle = document.createElement('input'); toggle.type = 'checkbox'; toggle.className = 'switch'; toggle.tabIndex = -1; toggle.setAttribute('aria-hidden', 'true');
+      tile.append(mono, text, toggle);
+      tile.addEventListener('click', () => changeSetting(`module:${id}`, !gameSettings.modules[id], quickStatus));
+      quick.append(tile);
+    }
+  }
+  quick.querySelectorAll('.quick').forEach(tile => {
+    const on = Boolean(gameSettings.modules[tile.dataset.module]);
+    tile.classList.toggle('on', on);
+    tile.setAttribute('aria-pressed', String(on));
+    tile.querySelector('.switch').checked = on;
   });
-});
+  const swatches = document.getElementById('accent-swatches');
+  if (!swatches.childElementCount) {
+    ACCENT_COLORS.forEach(([name, hex], index) => {
+      const swatch = document.createElement('button');
+      swatch.className = 'swatch'; swatch.setAttribute('role', 'radio'); swatch.setAttribute('aria-label', name); swatch.title = name;
+      swatch.style.background = hex; swatch.style.setProperty('--glow', hex);
+      swatch.addEventListener('click', () => changeSetting('accent', index, settingsStatus));
+      swatches.append(swatch);
+    });
+  }
+  swatches.querySelectorAll('.swatch').forEach((swatch, index) => swatch.setAttribute('aria-checked', String(index === gameSettings.accent)));
+  const scale = document.getElementById('hud-scale');
+  if (!scale.childElementCount) {
+    for (const value of HUD_SCALES) {
+      const option = document.createElement('button');
+      option.textContent = `${value}%`; option.setAttribute('role', 'radio'); option.dataset.value = String(value);
+      option.addEventListener('click', () => changeSetting('hudScale', value, settingsStatus));
+      scale.append(option);
+    }
+  }
+  scale.querySelectorAll('button').forEach(option => option.setAttribute('aria-checked', String(Number(option.dataset.value) === gameSettings.hudScale)));
+  document.getElementById('server-safe').checked = gameSettings.serverSafe;
+}
+document.getElementById('server-safe').addEventListener('change', event => changeSetting('serverSafe', event.target.checked, settingsStatus));
+async function refreshSettings() {
+  try { gameSettings = await window.nicoClient.settings(); renderSettings(); }
+  catch (error) { quickStatus.textContent = friendlyError(error, 'Could not read the game settings.'); }
+}
+void refreshSettings();
 
 document.getElementById('open-mods').addEventListener('click', async () => {
   const status = document.getElementById('mods-status');
@@ -28,9 +127,12 @@ function friendlyError(error, fallback) {
 }
 
 const play = document.getElementById('play');
+const playSide = document.getElementById('play-side');
 const gameStatus = document.getElementById('game-status');
+playSide.addEventListener('click', () => { showPage('home'); play.click(); });
 play.addEventListener('click', async () => {
-  play.disabled = true;
+  if (play.disabled) return;
+  play.disabled = true; playSide.disabled = true;
   gameStatus.textContent = 'Preparing the NicoClient profile…';
   try {
     const result = await window.nicoClient.play();
@@ -38,7 +140,7 @@ play.addEventListener('click', async () => {
     void refreshMods();
     void refreshStatus();
   } catch { gameStatus.textContent = 'Could not prepare Minecraft.'; }
-  finally { play.disabled = false; }
+  finally { play.disabled = false; playSide.disabled = false; }
 });
 
 document.getElementById('get-launcher').addEventListener('click', () => { void window.nicoClient.openLauncherDownload(); });
@@ -46,8 +148,12 @@ async function refreshStatus(showHint = false) {
   try {
     const info = await window.nicoClient.launcherInfo();
     document.getElementById('app-version').textContent = info.version;
-    document.getElementById('tile-launcher').textContent = info.launcherInstalled ? 'Installed' : 'Not found';
-    document.getElementById('tile-profile').textContent = !info.launcherInstalled || info.profile === 'first-run' ? 'Not ready yet' : info.profile === 'ready' ? 'Ready' : 'Press PLAY to set up';
+    const ready = info.launcherInstalled && info.profile === 'ready';
+    const tile = (id, text, good) => { const element = document.getElementById(id); element.textContent = text; element.closest('.status-tile').className = `status-tile ${good ? 'good' : 'warn'}`; };
+    tile('tile-launcher', info.launcherInstalled ? 'Installed' : 'Not found', info.launcherInstalled);
+    tile('tile-profile', !info.launcherInstalled || info.profile === 'first-run' ? 'Not ready yet' : info.profile === 'ready' ? 'Ready' : 'Press PLAY to set up', ready);
+    document.getElementById('status-dot').className = `status-dot ${ready ? 'good' : 'warn'}`;
+    document.getElementById('status-text').textContent = ready ? 'Ready to play' : 'Setup needed';
     document.getElementById('get-launcher').hidden = info.launcherInstalled;
     if (showHint && !info.launcherInstalled) gameStatus.textContent = 'NicoClient plays through the official Minecraft Launcher, which is not installed yet.';
   } catch { /* The status tiles are only informative. */ }
@@ -64,6 +170,9 @@ function renderUpdate(state) {
   progress.value = state.percent || 0;
   document.getElementById('update-install').hidden = state.status !== 'downloaded';
   const active = state.status === 'downloading' || state.status === 'downloaded';
+  const chip = document.getElementById('update-chip');
+  chip.textContent = state.status === 'downloaded' ? 'UPDATE READY' : state.status === 'downloading' ? 'UPDATING…' : 'EARLY ACCESS';
+  chip.classList.toggle('update', active);
   document.getElementById('update-banner').hidden = !active;
   if (active) {
     const ready = state.status === 'downloaded';
@@ -114,6 +223,7 @@ async function refreshMods() {
   try {
     const mods = await window.nicoClient.listMods();
     document.getElementById('tile-mods').textContent = String(mods.filter(mod => mod.enabled).length);
+    document.getElementById('tile-mods').closest('.status-tile').className = 'status-tile good';
     container.replaceChildren();
     if (!mods.length) container.textContent = 'No installed mods yet.';
     for (const mod of mods) {
@@ -161,16 +271,18 @@ let searchNumber = 0;
 async function runSearch() {
   const number = ++searchNumber;
   const query = document.getElementById('mod-query').value.trim();
-  modStatus.textContent = query ? 'Searching Modrinth…' : 'Loading popular mods…';
+  const category = document.querySelector('.chip.active')?.dataset.category || '';
+  modStatus.textContent = query ? 'Searching Modrinth…' : 'Loading mods…';
   const results = document.getElementById('mod-results');
   try {
-    const [mods, installed] = await Promise.all([window.nicoClient.searchMods(query), window.nicoClient.installedProjects().catch(() => [])]);
+    const [mods, installed] = await Promise.all([window.nicoClient.searchMods(query, category), window.nicoClient.installedProjects().catch(() => [])]);
     if (number !== searchNumber) return;
     results.replaceChildren();
-    modStatus.textContent = mods.length ? (query ? `${mods.length} compatible results` : 'Popular mods for Fabric 1.21.11') : 'No compatible mods found.';
+    const label = document.querySelector('.chip.active')?.textContent || 'Popular';
+    modStatus.textContent = mods.length ? (query ? `${mods.length} compatible results` : `${label} mods for Fabric 1.21.11`) : 'No compatible mods found.';
     for (const mod of mods) {
       const card = document.createElement('article'); card.className = 'mod-card';
-      if (mod.icon) { const image = document.createElement('img'); image.src = mod.icon; image.alt = ''; card.append(image); }
+      const image = document.createElement('img'); image.alt = ''; if (mod.icon) image.src = mod.icon; card.append(image);
       const title = document.createElement('h3'); title.textContent = mod.title; card.append(title);
       const downloads = document.createElement('small'); downloads.textContent = `${Number(mod.downloads).toLocaleString()} downloads`; card.append(downloads);
       const description = document.createElement('p'); description.textContent = mod.description; card.append(description);
@@ -190,6 +302,10 @@ async function runSearch() {
 }
 let searchTimer;
 document.getElementById('mod-query').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 300); });
+document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
+  document.querySelectorAll('.chip').forEach(other => other.classList.toggle('active', other === chip));
+  clearTimeout(searchTimer); void runSearch();
+}));
 document.getElementById('mod-search-form').addEventListener('submit', event => { event.preventDefault(); clearTimeout(searchTimer); void runSearch(); });
 let modsPageOpened = false;
 async function openModsPage() {

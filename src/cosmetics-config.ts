@@ -44,16 +44,73 @@ export async function readCosmetics(gameDirectory: string): Promise<CosmeticChoi
   };
 }
 
+/**
+ * Modules the launcher can switch from its Home page, with their default when the game has not saved yet.
+ * Ids and defaults must match ModuleManager.java in the mod.
+ */
+export const QUICK_MODULES = {
+  fps: true, keys: false, coords: false, armor: false, zoom: true, fullbright: false,
+  crosshair: false, togglesprint: false, waypoints: false, particles: false, dynamicfps: false, nofog: false
+} as const;
+export type QuickModule = keyof typeof QUICK_MODULES;
+const HUD_SCALES = [75, 100, 125, 150];
+export interface GameSettings { modules: Record<QuickModule, boolean>; accent: number; serverSafe: boolean; hudScale: number }
+
+export async function readSettings(gameDirectory: string): Promise<GameSettings> {
+  let text = '';
+  try { text = await fs.readFile(configFile(gameDirectory), 'utf8'); } catch { /* No settings yet: the game's defaults apply. */ }
+  const values = parse(text);
+  const modules = {} as Record<QuickModule, boolean>;
+  for (const [id, fallback] of Object.entries(QUICK_MODULES) as [QuickModule, boolean][]) {
+    const value = values.get(`${id}.enabled`);
+    modules[id] = value === undefined ? fallback : value === 'true';
+  }
+  const accent = Number.parseInt(values.get('client.accent') ?? '0', 10);
+  const scale = Number.parseInt(values.get('client.hudscale') ?? '100', 10);
+  return {
+    modules,
+    accent: ACCENTS.includes(accent) ? accent : 0,
+    serverSafe: values.get('client.serversafe') !== 'false',
+    hudScale: HUD_SCALES.includes(scale) ? scale : 100
+  };
+}
+
+/** Changes one game setting from the launcher. Only the keys listed here can be written. */
+export function writeSetting(gameDirectory: string, name: string, value: unknown): Promise<GameSettings> {
+  let key: string, text: string;
+  if (typeof name === 'string' && name.startsWith('module:') && Object.hasOwn(QUICK_MODULES, name.slice(7))) {
+    if (typeof value !== 'boolean') return Promise.reject(new Error('A module can only be on or off.'));
+    key = `${name.slice(7)}.enabled`; text = String(value);
+  } else if (name === 'accent') {
+    if (typeof value !== 'number' || !ACCENTS.includes(value)) return Promise.reject(new Error('That color does not exist.'));
+    key = 'client.accent'; text = String(value);
+  } else if (name === 'serverSafe') {
+    if (typeof value !== 'boolean') return Promise.reject(new Error('Server-safe mode can only be on or off.'));
+    key = 'client.serversafe'; text = String(value);
+  } else if (name === 'hudScale') {
+    if (typeof value !== 'number' || !HUD_SCALES.includes(value)) return Promise.reject(new Error('That HUD size does not exist.'));
+    key = 'client.hudscale'; text = String(value);
+  } else {
+    return Promise.reject(new Error('Unknown setting.'));
+  }
+  return queued(() => writeLine(gameDirectory, key, text)).then(() => readSettings(gameDirectory));
+}
+
 let queue: Promise<unknown> = Promise.resolve();
+
+/** Writes run one after another, so quick clicks cannot overwrite each other. */
+function queued<T>(task: () => Promise<T>): Promise<T> {
+  const next = queue.then(task);
+  queue = next.catch(() => undefined);
+  return next;
+}
 
 /**
  * Changes one cosmetic in the game's settings file and keeps every other line as it was.
  * Writes run one after another, so quick clicks cannot overwrite each other.
  */
 export function writeCosmetic(gameDirectory: string, slot: string, value: unknown): Promise<CosmeticChoice> {
-  const next = queue.then(() => writeNow(gameDirectory, slot, value));
-  queue = next.catch(() => undefined);
-  return next;
+  return queued(() => writeNow(gameDirectory, slot, value));
 }
 
 async function writeNow(gameDirectory: string, slot: string, value: unknown): Promise<CosmeticChoice> {
@@ -68,6 +125,12 @@ async function writeNow(gameDirectory: string, slot: string, value: unknown): Pr
   } else {
     throw new Error('Unknown cosmetic.');
   }
+  await writeLine(gameDirectory, key, text);
+  return readCosmetics(gameDirectory);
+}
+
+/** Replaces or adds one key=value line and keeps every other line as it was. */
+async function writeLine(gameDirectory: string, key: string, text: string): Promise<void> {
   const file = configFile(gameDirectory);
   let lines: string[] = [];
   try { lines = (await fs.readFile(file, 'utf8')).split(/\r?\n/); } catch { /* Start a new file. */ }
@@ -79,5 +142,4 @@ async function writeNow(gameDirectory: string, slot: string, value: unknown): Pr
   const temporary = `${file}.${process.pid}.tmp`;
   await fs.writeFile(temporary, `${lines.join('\n')}\n`, 'utf8');
   await fs.rename(temporary, file);
-  return readCosmetics(gameDirectory);
 }

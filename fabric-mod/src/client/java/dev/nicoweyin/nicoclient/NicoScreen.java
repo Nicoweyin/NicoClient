@@ -1,6 +1,9 @@
 package dev.nicoweyin.nicoclient;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -68,6 +71,7 @@ public final class NicoScreen extends AnimatedScreen {
             float selected = animate("selected:" + i, i == category ? 1 : 0, 16);
             Ui.text(g, CATEGORIES[i], left + 18 + hover * 2, y + 5, Ui.alpha(Ui.mix(Ui.mix(Ui.MUTED, Ui.TEXT, hover), Ui.TEXT, selected), alpha));
         }
+        profile(g, left, top);
         button(g, "Edit HUD", left + 9, editHudY(), SIDEBAR - 14, 20, mouseX, mouseY);
         button(g, "Settings", left + 9, settingsY(), SIDEBAR - 14, 20, mouseX, mouseY);
 
@@ -108,8 +112,23 @@ public final class NicoScreen extends AnimatedScreen {
             int surface = Ui.mix(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, hover), Ui.accent(), on * 0.12f);
             Ui.rounded(g, x, y, w, ROW, 8, Ui.alpha(surface, alpha));
             if (on > 0.01f) Ui.rounded(g, x + 3, y + 8, 3, ROW - 16, 1.5f, Ui.alpha(Ui.accentLight(), alpha * on));
-            Ui.text(g, Ui.fit(module.name, w - 80), x + 11, y + 6, Ui.alpha(Ui.TEXT, alpha));
-            Ui.text(g, Ui.fit(module.description(), w - 70), x + 11, y + 17, Ui.alpha(Ui.MUTED, alpha));
+            // A small monogram tile tinted by category makes the long list easy to scan.
+            int tint = tint(module.category);
+            Ui.rounded(g, x + 10, y + 5, 20, 20, 6, Ui.alpha(Ui.mix(Ui.SURFACE, tint, 0.28f + on * 0.12f), alpha));
+            String mark = monogram(module.name);
+            Ui.text(g, mark, x + 20 - Ui.width(mark) / 2f, y + 11, Ui.alpha(Ui.mix(tint, 0xFFFFFFFF, 0.45f), alpha));
+            int reserved = 58;
+            if (module.hotkey >= 0) {
+                String key = keyName(module.hotkey);
+                int chip = Ui.width(key) + 10;
+                reserved += chip + 4;
+                Ui.rounded(g, starX(x, w) - chip - 4, y + 9, chip, 12, 4, Ui.alpha(Ui.OFF, alpha));
+                Ui.text(g, key, starX(x, w) - chip + 1, y + 11, Ui.alpha(Ui.MUTED, alpha));
+            }
+            Ui.text(g, Ui.fit(module.name, w - 36 - reserved), x + 36, y + 6, Ui.alpha(Ui.TEXT, alpha));
+            boolean paused = module.enabled && ServerSafe.paused(module);
+            String detail = paused ? "Paused here by Server-safe mode" : module.description();
+            Ui.text(g, Ui.fit(detail, w - 36 - reserved + 10), x + 36, y + 17, Ui.alpha(paused ? 0xFFF2B84B : Ui.MUTED, alpha));
             boolean overStar = inList && Ui.inside(mouseX, mouseY, starX(x, w), y, 16, ROW);
             int star = module.favorite ? Ui.accentLight() : overStar ? Ui.TEXT : Ui.OFF;
             Ui.text(g, "★", starX(x, w) + 3, y + 11, Ui.alpha(star, alpha));
@@ -129,6 +148,40 @@ public final class NicoScreen extends AnimatedScreen {
     }
 
     private static int starX(int x, int w) { return x + w - 52; }
+
+    private static int tint(String category) {
+        return switch (category) {
+            case "HUD" -> 0xFF6C7BFF;
+            case "Visuals" -> 0xFFD06BFF;
+            case "Utility" -> 0xFF35C9A0;
+            case "Performance" -> 0xFFF2A93B;
+            default -> Ui.accent();
+        };
+    }
+
+    /** "FPS Counter" becomes "FC", "Zoom" becomes "Zo". */
+    static String monogram(String name) {
+        String[] words = name.replace("&", "").trim().split("\\s+");
+        if (words.length > 1) return (words[0].substring(0, 1) + words[1].substring(0, 1)).toUpperCase(Locale.ROOT);
+        return words[0].length() > 1 ? words[0].substring(0, 1).toUpperCase(Locale.ROOT) + words[0].substring(1, 2).toLowerCase(Locale.ROOT) : words[0];
+    }
+
+    static String keyName(int key) {
+        String name = InputConstants.Type.KEYSYM.getOrCreate(key).getDisplayName().getString();
+        return name.length() > 8 ? name.substring(0, 8) : name;
+    }
+
+    /** Your face and name above the sidebar buttons, when the window is tall enough. */
+    private void profile(GuiGraphics g, int left, int top) {
+        Minecraft client = Minecraft.getInstance();
+        float y = editHudY() - 30;
+        if (client.player == null || y < top + ITEMS_TOP + CATEGORIES.length * (ITEM + ITEM_GAP) + 4) return;
+        Ui.rounded(g, left + 9, y, SIDEBAR - 14, 24, 7, Ui.alpha(Ui.mix(Ui.SIDEBAR, Ui.accent(), 0.10f), alpha));
+        if (alpha > 0.5f) PlayerFaceRenderer.draw(g, client.player.getSkin(), left + 14, Math.round(y) + 4, 16);
+        Ui.text(g, Ui.fit(client.getUser().getName(), SIDEBAR - 44), left + 35, y + 4, Ui.alpha(Ui.TEXT, alpha));
+        boolean safe = NicoClientMod.MODULES.serverSafe.on() && ServerSafe.onPublicServer(client);
+        Ui.text(g, safe ? "Server-safe" : "Online", left + 35, y + 14, Ui.alpha(safe ? 0xFFF2B84B : Ui.mix(Ui.MUTED, 0xFF35C9A0, 0.6f), alpha));
+    }
     private int cosmeticsX() { return contentX() + contentWidth() - COSMETICS; }
 
     public int[] cosmeticsCenter() { return new int[] {cosmeticsX() + COSMETICS / 2, top() + 19}; }

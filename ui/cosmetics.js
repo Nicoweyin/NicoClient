@@ -286,3 +286,14 @@ async function openCosmeticsPage() {
     status.textContent = friendlyError(error, 'Could not read your cosmetics.');
   }
 }
+
+/** The small "Your look" card on the Home page. */
+async function renderHomeLook() {
+  try {
+    const current = await window.nicoClient.cosmetics();
+    drawPreview(document.getElementById('home-look'), current);
+    const picked = Object.keys(COSMETICS).filter(slot => current[slot] > 0).map(slot => COSMETICS[slot][current[slot]]);
+    document.getElementById('home-look-text').textContent = picked.length ? picked.join(' · ') : 'Nothing equipped yet';
+  } catch { /* The card is only a preview. */ }
+}
+void renderHomeLook();

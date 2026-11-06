@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { installLocalMod, setupOfficialProfile, findOfficialLauncher, profileState } = require('../dist/official-profile.js');
-const { readCosmetics, writeCosmetic, configFile } = require('../dist/cosmetics-config.js');
+const { readCosmetics, writeCosmetic, configFile, readSettings, writeSetting } = require('../dist/cosmetics-config.js');
 const { installMod, ensureMod, updateMod, checkModUpdate, installedProjects } = require('../dist/modrinth.js');
 
 const sha1 = bytes => crypto.createHash('sha1').update(bytes).digest('hex');
@@ -243,4 +243,35 @@ test('the Cosmetics tab changes only cosmetic lines in the game settings', () =>
 test('quick clicks in the Cosmetics tab all reach the settings file', () => withDir(async dir => {
   await Promise.all([writeCosmetic(dir, 'cape', 4), writeCosmetic(dir, 'wings', 3), writeCosmetic(dir, 'halo', 2), writeCosmetic(dir, 'trail', 5)]);
   assert.deepEqual(await readCosmetics(dir), { cape: 4, wings: 3, halo: 2, trail: 5, flap: true, accent: 0 });
+}));
+
+test('the launcher switches only listed game settings and keeps the rest', () => withDir(async dir => {
+  const first = await readSettings(dir);
+  assert.equal(first.modules.fps, true);
+  assert.equal(first.modules.zoom, true);
+  assert.equal(first.modules.fullbright, false);
+  assert.equal(first.serverSafe, true);
+  assert.equal(first.hudScale, 100);
+  await fs.mkdir(path.join(dir, 'config'));
+  await fs.writeFile(configFile(dir), '#NicoClient settings\nfps.enabled=false\ncosmetics.cape=2\nfps.x=40\n');
+  assert.equal((await readSettings(dir)).modules.fps, false);
+  const after = await writeSetting(dir, 'module:fullbright', true);
+  assert.equal(after.modules.fullbright, true);
+  await writeSetting(dir, 'accent', 4);
+  await writeSetting(dir, 'serverSafe', false);
+  const last = await writeSetting(dir, 'hudScale', 125);
+  assert.deepEqual([last.accent, last.serverSafe, last.hudScale], [4, false, 125]);
+  const text = await fs.readFile(configFile(dir), 'utf8');
+  assert.match(text, /^cosmetics\.cape=2$/m);
+  assert.match(text, /^fps\.x=40$/m);
+  assert.match(text, /^client\.serversafe=false$/m);
+  await assert.rejects(writeSetting(dir, 'module:freelook', true), /Unknown/);
+  await assert.rejects(writeSetting(dir, 'fps.x', 3), /Unknown/);
+  await assert.rejects(writeSetting(dir, 'accent', 9), /does not exist/);
+  await assert.rejects(writeSetting(dir, 'hudScale', 110), /does not exist/);
+  await assert.rejects(writeSetting(dir, 'module:fps', 'yes'), /on or off/);
+  await Promise.all([writeSetting(dir, 'module:keys', true), writeSetting(dir, 'module:coords', true), writeCosmetic(dir, 'wings', 2)]);
+  const both = await readSettings(dir);
+  assert.equal(both.modules.keys && both.modules.coords, true);
+  assert.equal((await readCosmetics(dir)).wings, 2);
 }));
