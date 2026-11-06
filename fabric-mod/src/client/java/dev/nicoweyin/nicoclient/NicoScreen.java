@@ -11,7 +11,7 @@ import java.util.Locale;
 public final class NicoScreen extends AnimatedScreen {
     private static final String[] CATEGORIES = {"All", "HUD", "Visuals", "Utility", "Performance", "Favorites"};
     private static final int SIDEBAR = 104, ROW = 30, ROW_GAP = 4, ITEM = 18, ITEM_GAP = 2, ITEMS_TOP = 36, FAVORITES = 5;
-    private static final int MAX_QUERY = 40;
+    private static final int MAX_QUERY = 40, COSMETICS = 66;
     private String query = "";
     private int category;
     private float scroll, scrollTarget;
@@ -55,11 +55,9 @@ public final class NicoScreen extends AnimatedScreen {
         Ui.rounded(g, left, top, panelW, panelH, 12, Ui.alpha(Ui.PANEL, alpha));
         Ui.rounded(g, left + 4, top + 4, SIDEBAR - 4, panelH - 8, 9, Ui.alpha(Ui.SIDEBAR, alpha));
 
-        Ui.rounded(g, left + 12, top + 10, 10, 10, 5, Ui.alpha(Ui.mix(Ui.accent(), Ui.SIDEBAR, 0.55f), alpha));
-        Ui.rounded(g, left + 14, top + 12, 6, 6, 3, Ui.alpha(Ui.accentLight(), alpha));
-        Ui.text(g, "NicoClient", left + 27, top + 11, Ui.alpha(Ui.TEXT, alpha));
-        long active = NicoClientMod.MODULES.modules.stream().filter(module -> module.enabled).count();
-        Ui.text(g, active + " of " + NicoClientMod.MODULES.modules.size() + " on", left + 27, top + 22, Ui.alpha(Ui.MUTED, alpha));
+        Ui.rounded(g, left + 12, top + 13, 10, 10, 5, Ui.alpha(Ui.mix(Ui.accent(), Ui.SIDEBAR, 0.55f), alpha));
+        Ui.rounded(g, left + 14, top + 15, 6, 6, 3, Ui.alpha(Ui.accentLight(), alpha));
+        Ui.text(g, "NicoClient", left + 27, top + 14, Ui.alpha(Ui.TEXT, alpha));
 
         float indicator = animate("category", ITEMS_TOP + category * (ITEM + ITEM_GAP), 20);
         Ui.rounded(g, left + 9, top + indicator, SIDEBAR - 14, ITEM, 6, Ui.alpha(Ui.accent(), alpha));
@@ -75,6 +73,10 @@ public final class NicoScreen extends AnimatedScreen {
 
         int x = contentX(), w = contentWidth();
         // Typing always goes to the search box; the vanilla box only works with the vanilla font.
+        float cosmeticsHover = animate("cosmetics", !isClosing() && Ui.inside(mouseX, mouseY, cosmeticsX(), top + 8, COSMETICS, 22) ? 1 : 0, 16);
+        Ui.rounded(g, cosmeticsX(), top + 8, COSMETICS, 22, 7, Ui.alpha(Ui.mix(Ui.accent(), Ui.accentLight(), cosmeticsHover * 0.5f), alpha));
+        Ui.text(g, "Cosmetics", cosmeticsX() + (COSMETICS - Ui.width("Cosmetics")) / 2f, top + 15, Ui.alpha(Ui.TEXT, alpha));
+        w -= COSMETICS + 6;
         Ui.rounded(g, x, top + 8, w, 22, 7, Ui.alpha(Ui.SURFACE, alpha));
         if (query.isEmpty()) {
             Ui.text(g, "Search modules", x + 11, top + 15, Ui.alpha(Ui.MUTED, alpha));
@@ -88,6 +90,7 @@ public final class NicoScreen extends AnimatedScreen {
             Ui.rounded(g, x + 10 + caret, top + 14, 1, 10, 0, Ui.alpha(Ui.accentLight(), alpha));
         }
 
+        w = contentWidth();
         List<ModuleManager.Module> modules = visibleModules();
         float max = maxScroll(modules.size());
         scrollTarget = Math.max(0, Math.min(max, scrollTarget));
@@ -126,9 +129,12 @@ public final class NicoScreen extends AnimatedScreen {
     }
 
     private static int starX(int x, int w) { return x + w - 52; }
+    private int cosmeticsX() { return contentX() + contentWidth() - COSMETICS; }
+
+    public int[] cosmeticsCenter() { return new int[] {cosmeticsX() + COSMETICS / 2, top() + 19}; }
 
     /** The search text as it is drawn; public so the game test can check what the player sees. */
-    public String displayedQuery() { return Ui.fit(query, contentWidth() - 24); }
+    public String displayedQuery() { return Ui.fit(query, contentWidth() - COSMETICS - 30); }
 
     public int[] categoryCenter(int index) { return new int[] {left() + 40, top() + ITEMS_TOP + index * (ITEM + ITEM_GAP) + ITEM / 2}; }
 
@@ -151,6 +157,7 @@ public final class NicoScreen extends AnimatedScreen {
             }
         }
         if (Ui.inside(e.x(), e.y(), left + 9, editHudY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new HudEditor()); return true; }
+        if (Ui.inside(e.x(), e.y(), cosmeticsX(), top + 8, COSMETICS, 22)) { Ui.click(); closeTo(new CosmeticsScreen(this)); return true; }
         if (Ui.inside(e.x(), e.y(), left + 9, settingsY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new ModuleSettingsScreen(NicoClientMod.MODULES.client, this)); return true; }
         int x = contentX(), w = contentWidth();
         if (!Ui.inside(e.x(), e.y(), x, listTop(), w, listHeight())) return false;

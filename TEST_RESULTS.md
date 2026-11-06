@@ -87,3 +87,7 @@
 ## 2026-11-05: waypoints and four more modules (0.5.0)
 - `gradle runClientGameTest` passed: a waypoint saved by typing a name and Enter, the looked-at chest marked with the Mark block button and the Add key, Delete removing a row by a real click, the chest marker projected within a few pixels of the crosshair, the colored box drawn around the chest (screenshot), Target HUD following a pig after a hit, Armor Warning naming a helmet at 3%, No Pumpkin compared in screenshots and Tab Ping drawn in a player list.
 - Not tested: waypoints on a multiplayer server, the Armor Warning sound by ear, and Tab Ping with real server pings.
+
+## 2026-11-06: cosmetics
+- `gradle runClientGameTest` passed: the Cosmetics button in the menu opens the cosmetics screen, real clicks pick a cape, wings and halo, and screenshots of the preview and of third-person front and back views show Angel wings with a gold halo, Neon wings with the Nico cape, and Dragon wings with the Flame cape.
+- Not tested: an elytra together with a cape, and cosmetics on a multiplayer server (other players cannot see them).

@@ -7,6 +7,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundSource;
 import dev.nicoweyin.nicoclient.mixin.OverlayTextureAccessor;
@@ -42,6 +44,9 @@ public final class NicoClientMod implements ClientModInitializer {
         MODULES.load();
         TrajectoryRenderer.register();
         Waypoints.register();
+        LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
+            if (renderer instanceof AvatarRenderer<?> avatar) helper.register(new CosmeticLayer(avatar));
+        });
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("nicoclient", "controls"));
         KeyMapping toggle = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.fps", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping gui = menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));

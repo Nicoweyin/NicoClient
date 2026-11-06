@@ -238,6 +238,13 @@ public final class ModuleManager {
     public final Setting hudText = client.choice("hudtext", "HUD text color", 0, new String[] {"White", "Accent", "Cyan", "Yellow"}, 0, 1, 2, 3);
     public final Setting clickSounds = client.toggle("sounds", "Menu click sounds", true);
 
+    /** Your cosmetics, chosen in the Cosmetics screen. Not shown in the module list. */
+    public final Module cosmetics = new Module("cosmetics", "Cosmetics", "Client");
+    public final Setting capeStyle = cosmetics.choice("cape", "Cape", 0, new String[] {"Off", "Nebula", "Flame", "Ocean", "Nico"}, 0, 1, 2, 3, 4);
+    public final Setting wingStyle = cosmetics.choice("wings", "Wings", 0, new String[] {"Off", "Angel", "Dragon", "Neon"}, 0, 1, 2, 3);
+    public final Setting haloStyle = cosmetics.choice("halo", "Halo", 0, new String[] {"Off", "Gold", "Accent"}, 0, 1, 2);
+    public final Setting wingFlap = cosmetics.toggle("flap", "Animate wings", true);
+
     /** False until the first-run hint about the menu key has been shown. */
     public boolean welcomed;
     public final List<HudModule> hudModules = List.of(fps, keys, cps, coords, direction, speed, biome, ping, clock, session, armor, held, day, light, memory, server, potions, pickups, reach, combo, food, arrows, target);
@@ -245,7 +252,7 @@ public final class ModuleManager {
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
     private final Properties properties = new Properties();
 
-    private List<Module> withClient() { return Stream.concat(modules.stream(), Stream.of(client)).toList(); }
+    private List<Module> withClient() { return Stream.concat(modules.stream(), Stream.of(client, cosmetics)).toList(); }
 
     public void load() {
         if (!Files.isRegularFile(path)) return;

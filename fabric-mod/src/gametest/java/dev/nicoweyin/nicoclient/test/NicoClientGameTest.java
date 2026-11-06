@@ -11,6 +11,7 @@ import dev.nicoweyin.nicoclient.Freelook;
 import dev.nicoweyin.nicoclient.Reconnect;
 import dev.nicoweyin.nicoclient.ArmorWarning;
 import dev.nicoweyin.nicoclient.WaypointScreen;
+import dev.nicoweyin.nicoclient.CosmeticsScreen;
 import dev.nicoweyin.nicoclient.Waypoints;
 import net.minecraft.client.gui.GuiGraphics;
 import dev.nicoweyin.nicoclient.mixin.OverlayTextureAccessor;
@@ -637,6 +638,43 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                 m.save();
             });
             world.getServer().runCommand("gamemode creative @a");
+
+            // Cosmetics: opened from the menu button, chosen by real clicks, seen in the preview and in third person.
+            world.getServer().runCommand("time set noon");
+            world.getServer().runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 0");
+            context.setScreen(NicoScreen::new);
+            context.waitTicks(15);
+            int[] cosmeticsButton = context.computeOnClient(client -> ((NicoScreen) client.screen).cosmeticsCenter());
+            moveTo(context, cosmeticsButton[0], cosmeticsButton[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(20);
+            context.runOnClient(client -> check(client.screen instanceof CosmeticsScreen, "the Cosmetics button opens the cosmetics screen"));
+            for (int[] pick : new int[][] {{0, 1}, {1, 1}, {2, 1}}) {
+                int[] chip = context.computeOnClient(client -> ((CosmeticsScreen) client.screen).chipCenter(pick[0], pick[1]));
+                moveTo(context, chip[0], chip[1]);
+                context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+                context.waitTicks(3);
+            }
+            context.runOnClient(client -> {
+                check(m.capeStyle.get() == 1 && m.wingStyle.get() == 1 && m.haloStyle.get() == 1, "clicking chips picks Nebula cape, Angel wings and Gold halo");
+                ((CosmeticsScreen) client.screen).setRotation(150);
+            });
+            context.waitTicks(5);
+            context.takeScreenshot("nicoclient-16a-cosmetics-screen");
+            context.setScreen(() -> null);
+            context.runOnClient(client -> client.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+            context.waitTicks(10);
+            context.takeScreenshot("nicoclient-16b-cosmetics-front");
+            context.runOnClient(client -> { client.options.setCameraType(CameraType.THIRD_PERSON_BACK); m.capeStyle.set(4); m.wingStyle.set(3); m.haloStyle.set(2); });
+            context.waitTicks(10);
+            context.takeScreenshot("nicoclient-16c-cosmetics-back-neon");
+            context.runOnClient(client -> { m.capeStyle.set(2); m.wingStyle.set(2); });
+            context.waitTicks(10);
+            context.takeScreenshot("nicoclient-16d-cosmetics-back-dragon");
+            context.runOnClient(client -> {
+                client.options.setCameraType(CameraType.FIRST_PERSON);
+                m.capeStyle.set(0); m.wingStyle.set(0); m.haloStyle.set(0); m.save();
+            });
 
             // The menu at the other GUI scales players really use.
             for (int scale : new int[] {1, 3}) {
