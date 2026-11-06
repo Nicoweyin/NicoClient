@@ -30,6 +30,7 @@ public final class NicoClientMod implements ClientModInitializer {
     public static KeyMapping zoomKey, menuKey, freelookKey;
     private static boolean sprintApplied, sneakApplied, fogApplied, wasDead;
     private static long lastToolWarning;
+    private static int configChecks;
     private static int hitColorApplied = -2;
     private static boolean quietApplied;
     private static int quietVolumeApplied = -1;
@@ -61,6 +62,7 @@ public final class NicoClientMod implements ClientModInitializer {
             Combat.tick(client);
             ArmorWarning.tick(client);
             Trails.tick(client);
+            if (++configChecks % 40 == 0) MODULES.reloadCosmeticsIfChanged();
             Freelook.tick(client);
             applyHitColor(client);
             applyQuietMode(client);

@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('nicoClient', {
   openGameFolder: () => ipcRenderer.invoke('open-game-folder'),
   launcherInfo: () => ipcRenderer.invoke('launcher-info'),
   openLauncherDownload: () => ipcRenderer.invoke('open-launcher-download'),
+  cosmetics: () => ipcRenderer.invoke('cosmetics-get'),
+  setCosmetic: (slot: string, value: number | boolean) => ipcRenderer.invoke('cosmetics-set', slot, value),
   installedProjects: () => ipcRenderer.invoke('mods-installed-projects'),
   updateMod: (name: string) => ipcRenderer.invoke('mods-update', name),
   updateState: () => ipcRenderer.invoke('update-state'),

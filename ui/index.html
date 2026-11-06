@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="extras.css">
   <script src="renderer.js" defer></script>
+  <script src="cosmetics.js" defer></script>
 </head>
 <body>
   <div class="app">
@@ -17,6 +18,7 @@
       <nav aria-label="Main navigation">
         <button class="nav active" data-page="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>Home</span></button>
         <button class="nav" data-page="mods"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg><span>Mods</span></button>
+        <button class="nav" data-page="cosmetics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.3 5.6L20 9.3l-4.4 3.9 1.3 5.8L12 16l-4.9 3 1.3-5.8L4 9.3l5.7-.7z"/></svg><span>Cosmetics</span></button>
         <button class="nav" data-page="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Settings</span></button>
       </nav>
       <div class="sidebar-bottom"><span class="status-dot"></span> Development build <small id="app-version"></small></div>
@@ -29,6 +31,17 @@
         <div class="panel tips"><h2>In the game</h2><ul><li><kbd>Right Shift</kbd> opens the NicoClient menu</li><li><kbd>Left click</kbd> a module to switch it, <kbd>right click</kbd> to configure it</li><li>Hold <kbd>C</kbd> to zoom</li></ul></div>
       </section>
       <section class="page" id="mods"><div class="section-heading"><div class="eyebrow">MAKE IT YOURS</div><h1>Discover mods<span class="accent">.</span></h1><p>Explore Modrinth for Fabric · Minecraft 1.21.11</p></div><div class="panel"><form id="mod-search-form" class="search-row"><input id="mod-query" type="search" placeholder="Search Modrinth mods" aria-label="Search mods"><button class="secondary">Search</button></form><p id="mod-status" class="notice" role="status"></p><progress id="mod-progress" max="100" value="0" hidden></progress><div id="mod-results" class="mod-grid"></div></div><div class="panel"><div class="section-bar"><div><div class="eyebrow">YOUR INSTANCE</div><h2>Installed mods</h2></div><div class="button-row"><button class="secondary" id="check-all-mods">Check for updates</button><button class="secondary" id="refresh-mods">Refresh</button></div></div><div id="installed-mods"></div></div></section>
+      <section class="page" id="cosmetics"><div class="section-heading"><div class="eyebrow">LOOK THE PART</div><h1>Cosmetics<span class="accent">.</span></h1><p>Capes, wings, halos and trails for your player. Only you can see them in the game.</p></div>
+        <div class="cosmetics-layout">
+          <div class="panel cosmetics-stage"><canvas id="cosmetics-preview" width="260" height="320" aria-label="Preview of your cosmetics"></canvas><strong id="cosmetics-summary"></strong><label class="switch-row"><input type="checkbox" id="cosmetics-flap"> Animate wings</label><p class="notice" id="cosmetics-status" role="status">Pick a style; it is saved at once.</p></div>
+          <div class="cosmetics-choices">
+            <div class="panel"><h2>Cape</h2><div class="cosmetic-grid" id="cosmetics-cape"></div></div>
+            <div class="panel"><h2>Wings</h2><div class="cosmetic-grid" id="cosmetics-wings"></div></div>
+            <div class="panel"><h2>Halo</h2><div class="cosmetic-grid" id="cosmetics-halo"></div></div>
+            <div class="panel"><h2>Trail</h2><div class="cosmetic-grid" id="cosmetics-trail"></div></div>
+          </div>
+        </div>
+      </section>
       <section class="page" id="settings"><div class="section-heading"><div class="eyebrow">MAKE IT YOURS</div><h1>Settings</h1><p>Configure your NicoClient experience.</p></div><div class="panel"><h2>Folders</h2><p>NicoClient keeps its files apart from your normal Minecraft installation.</p><div class="button-row"><button class="secondary" id="open-mods">Open Mods Folder</button><button class="secondary" id="open-game">Open Game Folder</button></div><p class="notice" id="mods-status" role="status"></p></div><div class="panel"><div class="eyebrow">NICOCLIENT RELEASES</div><h2>Launcher updates</h2><p id="update-status" role="status">Checking update availability…</p><pre id="update-notes" class="release-notes" hidden></pre><progress id="update-progress" max="100" value="0" hidden></progress><div class="button-row"><button class="secondary" id="update-check">Check for Updates</button><button class="secondary" id="update-install" hidden>Restart and install</button></div><p class="notice">Updates download on their own and install when NicoClient restarts.</p></div><div class="panel"><h2>About NicoClient</h2><p>Copyright © 2026 Nicoweyin. All rights reserved.</p><p class="notice">Third-party software and assets belong to their respective owners. See the copyright and third-party notices supplied with NicoClient.</p></div></section>
       <footer>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</footer>
     </main>

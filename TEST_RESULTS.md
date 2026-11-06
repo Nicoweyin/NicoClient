@@ -92,3 +92,9 @@
 - `gradle runClientGameTest` passed: the Cosmetics button in the menu opens the cosmetics screen, real clicks pick a cape, wings and halo, and screenshots of the preview and of third-person front and back views show Angel wings with a gold halo, Neon wings with the Nico cape, and Dragon wings with the Flame cape.
 - Not tested: an elytra together with a cape, and cosmetics on a multiplayer server (other players cannot see them).
 - More cosmetics: the cosmetics screen now uses arrow pickers (next and previous arrows clicked in the client test, including wrapping round), and screenshots show Aurora, Sakura, Rainbow, Gold and Lava capes with Butterfly, Phoenix, Crystal and Bat wings. The trail spawned particles while walking, but they were not visible in the underwater screenshot, so the look of trails is unchecked.
+
+## 2026-11-06: launcher Cosmetics tab
+- The real launcher was started with a debug port: the Cosmetics tab showed 31 cards, clicks selected Sakura, Phoenix, Gold and Hearts, and the settings file held the clicked values; screenshots reviewed. The owner's own settings file was backed up and restored afterward.
+- A bug was found and fixed: two quick clicks could overwrite each other in the settings file. Writes now run one after another; a unit test covers four writes at once.
+- `gradle runClientGameTest`: a cape written into the settings file from outside reached the running game within two seconds.
+- Not tested: the installed launcher build and a game started from the official launcher while switching cosmetics.

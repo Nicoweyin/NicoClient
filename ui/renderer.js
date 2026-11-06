@@ -7,6 +7,7 @@ document.querySelectorAll('.nav').forEach((button) => {
     document.getElementById(button.dataset.page).classList.add('active');
     if (button.dataset.page === 'mods') void openModsPage();
     if (button.dataset.page === 'home') void refreshStatus();
+    if (button.dataset.page === 'cosmetics') void openCosmeticsPage();
   });
 });
 

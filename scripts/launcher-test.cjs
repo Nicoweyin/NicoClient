@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { installLocalMod, setupOfficialProfile, findOfficialLauncher, profileState } = require('../dist/official-profile.js');
+const { readCosmetics, writeCosmetic, configFile } = require('../dist/cosmetics-config.js');
 const { installMod, ensureMod, updateMod, checkModUpdate, installedProjects } = require('../dist/modrinth.js');
 
 const sha1 = bytes => crypto.createHash('sha1').update(bytes).digest('hex');
@@ -216,4 +217,30 @@ test('search results can tell which projects are already installed', () => withD
     await fs.writeFile(path.join(dir, 'local.jar'), 'not on modrinth');
     assert.deepEqual(await installedProjects(dir), ['P7dR8mSH']);
   } finally { restore(); }
+}));
+
+test('the Cosmetics tab changes only cosmetic lines in the game settings', () => withDir(async dir => {
+  assert.deepEqual(await readCosmetics(dir), { cape: 0, wings: 0, halo: 0, trail: 0, flap: true, accent: 0 });
+  await fs.mkdir(path.join(dir, 'config'));
+  await fs.writeFile(configFile(dir), '#NicoClient settings\nfps.enabled=true\nclient.accent=3\ncosmetics.cape=2\n');
+  const after = await writeCosmetic(dir, 'wings', 5);
+  assert.deepEqual(after, { cape: 2, wings: 5, halo: 0, trail: 0, flap: true, accent: 3 });
+  await writeCosmetic(dir, 'cape', 11);
+  await writeCosmetic(dir, 'flap', false);
+  const text = await fs.readFile(configFile(dir), 'utf8');
+  assert.match(text, /^#NicoClient settings$/m);
+  assert.match(text, /^fps\.enabled=true$/m);
+  assert.match(text, /^cosmetics\.cape=11$/m);
+  assert.match(text, /^cosmetics\.flap=false$/m);
+  assert.equal(text.match(/cosmetics\.cape/g).length, 1);
+  await assert.rejects(writeCosmetic(dir, 'cape', 12), /does not exist/);
+  await assert.rejects(writeCosmetic(dir, 'wings', -1), /does not exist/);
+  await assert.rejects(writeCosmetic(dir, 'client.accent', 1), /Unknown/);
+  await assert.rejects(writeCosmetic(dir, 'flap', 'yes'), /on or off/);
+  assert.deepEqual((await fs.readdir(path.join(dir, 'config'))).sort(), ['nicoclient.properties']);
+}));
+
+test('quick clicks in the Cosmetics tab all reach the settings file', () => withDir(async dir => {
+  await Promise.all([writeCosmetic(dir, 'cape', 4), writeCosmetic(dir, 'wings', 3), writeCosmetic(dir, 'halo', 2), writeCosmetic(dir, 'trail', 5)]);
+  assert.deepEqual(await readCosmetics(dir), { cape: 4, wings: 3, halo: 2, trail: 5, flap: true, accent: 0 });
 }));

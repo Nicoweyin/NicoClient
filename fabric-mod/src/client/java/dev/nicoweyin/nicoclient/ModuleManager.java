@@ -254,6 +254,32 @@ public final class ModuleManager {
     public final List<Module> modules = Stream.concat(hudModules.stream(), Stream.<Module>of(zoom, crosshair, lowFire, fullbright, trajectories, noFog, noWeather, customTime, noVignette, noHurtCam, blockOutline, staticFov, clearWater, hitColor, freelook, noPumpkin, tabPing, toggleSprint, toggleSneak, autoSprint, copyCoords, toolProtect, deathPos, chatTime, chatHistory, quietMode, autoReconnect, waypoints, armorWarning, particles, dynamicFps, entityDistance)).toList();
     private final Path path = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
     private final Properties properties = new Properties();
+    /** When the settings file was last read or written by the game, to notice changes made by the launcher. */
+    private long knownFileTime;
+
+    private long fileTime() {
+        try { return Files.getLastModifiedTime(path).toMillis(); } catch (IOException e) { return 0; }
+    }
+
+    /** The launcher's Cosmetics tab writes the settings file; a running game takes the new cosmetics from it. */
+    public boolean reloadCosmeticsIfChanged() {
+        long time = fileTime();
+        if (time == 0 || time == knownFileTime) return false;
+        knownFileTime = time;
+        Properties fresh = new Properties();
+        try (Reader reader = Files.newBufferedReader(path)) {
+            fresh.load(reader);
+        } catch (IOException | IllegalArgumentException e) {
+            return false;
+        }
+        for (Setting setting : cosmetics.settings) {
+            String key = cosmetics.id + "." + setting.id, value = fresh.getProperty(key);
+            if (value == null) continue;
+            properties.setProperty(key, value);
+            loadSetting(key, setting);
+        }
+        return true;
+    }
 
     private List<Module> withClient() { return Stream.concat(modules.stream(), Stream.of(client, cosmetics)).toList(); }
 
@@ -272,6 +298,7 @@ public final class ModuleManager {
                 m.x = number(m.id + ".x", m.defaultX);
                 m.y = number(m.id + ".y", m.defaultY);
             }
+            knownFileTime = fileTime();
         } catch (IOException | IllegalArgumentException e) {
             System.err.println("NicoClient: unable to read configuration: " + e.getMessage());
         }
@@ -304,6 +331,7 @@ public final class ModuleManager {
         try {
             Files.createDirectories(path.getParent());
             try (Writer writer = Files.newBufferedWriter(path)) { properties.store(writer, "NicoClient settings"); }
+            knownFileTime = fileTime();
         } catch (IOException e) { System.err.println("NicoClient: unable to save configuration: " + e.getMessage()); }
     }
 }

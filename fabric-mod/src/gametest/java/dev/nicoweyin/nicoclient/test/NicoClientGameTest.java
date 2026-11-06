@@ -684,6 +684,20 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                 context.waitTicks(6);
                 context.takeScreenshot("nicoclient-16e-look-cape" + look[0] + "-wings" + look[1]);
             }
+            // The launcher's Cosmetics tab writes the settings file; the running game follows within two seconds.
+            context.runOnClient(client -> {
+                m.capeStyle.set(0); m.save();
+                try {
+                    Path file = FabricLoader.getInstance().getConfigDir().resolve("nicoclient.properties");
+                    Thread.sleep(20);
+                    String text = Files.readString(file).replaceAll("(?m)^cosmetics\\.cape=.*$", "cosmetics.cape=8");
+                    Files.writeString(file, text);
+                    Files.setLastModifiedTime(file, java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis() + 1000));
+                } catch (Exception e) { throw new AssertionError(e); }
+            });
+            context.waitTicks(45);
+            context.runOnClient(client -> check(m.capeStyle.get() == 8, "a cape chosen in the launcher reaches the running game, got " + m.capeStyle.get()));
+
             // Trail: walking forward leaves particles.
             context.runOnClient(client -> { m.trailStyle.set(1); Trails.spawned = 0; });
             context.getInput().holdKey(GLFW.GLFW_KEY_W);
