@@ -1,7 +1,7 @@
 {
   "name": "nicoclient",
   "productName": "NicoClient",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "private": true,
   "description": "NicoClient by Nicoweyin — an independent Minecraft launcher",
   "main": "dist/main.js",
