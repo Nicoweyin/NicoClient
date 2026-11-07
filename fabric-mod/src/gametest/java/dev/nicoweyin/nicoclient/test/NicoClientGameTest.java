@@ -655,6 +655,28 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.getInput().pressKey(GLFW.GLFW_KEY_M);
             context.waitTicks(15);
             context.runOnClient(client -> check(client.screen instanceof WaypointScreen, "M opens the waypoint menu: " + client.screen));
+            context.setScreen(() -> null);
+            context.waitTicks(10);
+
+            // The menu key is set in the NicoClient settings and is the same key as in Minecraft's Controls.
+            context.setScreen(() -> new ModuleSettingsScreen(m.waypoints, null));
+            context.waitTicks(15);
+            int[] menuKeyRow = context.computeOnClient(client -> ((ModuleSettingsScreen) client.screen).rowCenter(ModuleSettingsScreen.MENU_KEY_ROW));
+            moveTo(context, menuKeyRow[0], menuKeyRow[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.getInput().pressKey(GLFW.GLFW_KEY_B);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(dev.nicoweyin.nicoclient.NicoClientMod.waypointKey.getTranslatedKeyMessage().getString().equals("B"), "the menu key is now B in Minecraft's key bindings: " + dev.nicoweyin.nicoclient.NicoClientMod.waypointKey.getTranslatedKeyMessage().getString()));
+            context.takeScreenshot("nicoclient-15g-waypoint-menu-key");
+            context.setScreen(() -> null);
+            context.waitTicks(10);
+            context.getInput().pressKey(GLFW.GLFW_KEY_M);
+            context.waitTicks(10);
+            context.runOnClient(client -> check(client.screen == null, "M no longer opens the menu"));
+            context.getInput().pressKey(GLFW.GLFW_KEY_B);
+            context.waitTicks(15);
+            context.runOnClient(client -> check(client.screen instanceof WaypointScreen, "B opens the waypoint menu: " + client.screen));
             context.runOnClient(client -> Waypoints.add(client, "Farm"));
             int[] chestName = context.computeOnClient(client -> ((WaypointScreen) client.screen).nameCenter(0));
             moveTo(context, chestName[0], chestName[1]);
@@ -693,7 +715,12 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.runOnClient(client -> check(Waypoints.here(client).size() == 1 && Waypoints.here(client).get(0).name.equals("Loot"), "Delete removes Farm"));
             context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE);
             context.waitTicks(10);
-            context.runOnClient(client -> check(client.screen == null, "Escape closes the waypoint menu"));
+            context.runOnClient(client -> {
+                check(client.screen == null, "Escape closes the waypoint menu");
+                var key = dev.nicoweyin.nicoclient.NicoClientMod.waypointKey;
+                key.setKey(com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_M));
+                net.minecraft.client.KeyMapping.resetMapping();
+            });
 
             // Target HUD shows the pig just hit; Armor Warning reacts to a nearly broken helmet.
             world.getServer().runCommand("item replace entity @a armor.head with minecraft:iron_helmet[damage=160]");

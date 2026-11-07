@@ -115,3 +115,4 @@
 ## 2026-11-07: waypoint menu on M
 - `gradle runClientGameTest` passed in a real client: pressing M during play opened the waypoint menu; a real click on the Chest waypoint started renaming it with the old name filled in, Backspace, typing "Loot" and Enter renamed it without adding a new one; the row switch hid only Farm; the top switch turned all waypoints off in the world and on again; Delete removed Farm; Escape closed the menu. Screenshot reviewed.
 - Not tested: changing the key in Minecraft's Controls, and the menu on a multiplayer server.
+- Menu key: a real click on "Menu key" in the Waypoints settings and pressing B changed Minecraft's own key binding to B (the same one shown in Options, Controls); afterward M no longer opened the menu and B did. Screenshot reviewed.
