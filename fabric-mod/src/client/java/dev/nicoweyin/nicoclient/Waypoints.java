@@ -121,6 +121,13 @@ public final class Waypoints {
         return HudRenderer.title(path);
     }
 
+    /** How far to turn to face the waypoint, in degrees: 0 is ahead, positive is to the right. */
+    public static float relativeAngle(Minecraft client, Waypoint point) {
+        double dx = point.x + 0.5 - client.player.getX(), dz = point.z + 0.5 - client.player.getZ();
+        float target = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        return net.minecraft.util.Mth.wrapDegrees(target - client.player.getYRot());
+    }
+
     public static boolean inCurrentDimension(Minecraft client, Waypoint point) { return point.dimension.equals(dimension(client)); }
 
     private static void load() {

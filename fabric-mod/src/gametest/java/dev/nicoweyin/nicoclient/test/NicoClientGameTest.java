@@ -651,6 +651,21 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                 m.waypoints.hotkey = -1;
             });
 
+            // The arrow for the chest ahead points straight up; the Waypoints button in the main menu opens the list.
+            context.runOnClient(client -> {
+                float angle = Waypoints.relativeAngle(client, Waypoints.here(client).get(0));
+                check(Math.abs(angle) < 15, "the arrow points ahead to the chest: " + angle);
+            });
+            context.setScreen(() -> new NicoScreen());
+            context.waitTicks(15);
+            int[] waypointsButton = context.computeOnClient(client -> ((NicoScreen) client.screen).waypointsCenter());
+            moveTo(context, waypointsButton[0], waypointsButton[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(15);
+            context.runOnClient(client -> check(client.screen instanceof WaypointScreen, "the Waypoints button opens the list: " + client.screen));
+            context.setScreen(() -> null);
+            context.waitTicks(10);
+
             // The waypoint key (M) opens the menu during play; rename, hide, switch all off and delete with real clicks.
             context.getInput().pressKey(GLFW.GLFW_KEY_M);
             context.waitTicks(15);

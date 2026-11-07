@@ -108,7 +108,9 @@ public final class WaypointScreen extends AnimatedScreen {
             String detail = Waypoints.inCurrentDimension(minecraft, point)
                     ? point.coordinates() + "   " + (int) point.distanceTo(minecraft.player.position()) + " m"
                     : point.coordinates() + "   " + Waypoints.dimensionName(point);
-            int nameSpace = (int) (eyeX() - left - 40 - Ui.width(detail) - 10);
+            boolean here = Waypoints.inCurrentDimension(minecraft, point) && point.distanceTo(minecraft.player.position()) >= 2;
+            if (here) arrow(g, eyeX() - 16 - Ui.width(detail), y + ROW / 2f, Waypoints.relativeAngle(minecraft, point), point.visible ? point.color : Ui.MUTED);
+            int nameSpace = (int) (eyeX() - left - 40 - Ui.width(detail) - (here ? 26 : 10));
             Ui.text(g, Ui.fit(point.name, Math.max(30, nameSpace)), left + 32, y + 8, Ui.alpha(point.visible ? Ui.TEXT : Ui.MUTED, alpha));
             Ui.text(g, detail, eyeX() - 8 - Ui.width(detail), y + 8, Ui.alpha(Ui.MUTED, alpha));
             Ui.toggle(g, eyeX(), y + 6, animate("visible:" + System.identityHashCode(point), point.visible ? 1 : 0, 16), alpha);
@@ -126,6 +128,20 @@ public final class WaypointScreen extends AnimatedScreen {
         help = Ui.fit(help, panelW - 110);
         button(g, parent == null ? "Close" : "Back", left + 8, backY(), panelW - 24 - Ui.width(help), 20, mouseX, mouseY);
         Ui.text(g, help, left + panelW - 10 - Ui.width(help), backY() + 6, Ui.alpha(Ui.MUTED, alpha));
+    }
+
+    /** A small arrow pointing the way to a waypoint: up is straight ahead. */
+    private void arrow(GuiGraphics g, float cx, float cy, float degrees, int color) {
+        int c = Ui.alpha(color, alpha);
+        g.pose().pushMatrix();
+        g.pose().translate(cx, cy);
+        g.pose().rotate((float) Math.toRadians(degrees));
+        g.fill(-1, 0, 1, 5, c);
+        g.fill(-4, -1, 4, 0, c);
+        g.fill(-3, -2, 3, -1, c);
+        g.fill(-2, -3, 2, -2, c);
+        g.fill(-1, -4, 1, -3, c);
+        g.pose().popMatrix();
     }
 
     private void submit() {

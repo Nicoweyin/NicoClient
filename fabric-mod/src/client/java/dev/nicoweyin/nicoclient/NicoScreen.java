@@ -83,7 +83,12 @@ public final class NicoScreen extends AnimatedScreen {
         float profilesHover = animate("profiles", !isClosing() && Ui.inside(mouseX, mouseY, profilesX(), top + 8, PROFILES, 22) ? 1 : 0, 16);
         Ui.rounded(g, profilesX(), top + 8, PROFILES, 22, 7, Ui.alpha(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, profilesHover), alpha));
         Ui.text(g, "Profiles", profilesX() + (PROFILES - Ui.width("Profiles")) / 2f, top + 15, Ui.alpha(Ui.mix(Ui.MUTED, Ui.TEXT, 0.6f + profilesHover * 0.4f), alpha));
-        w -= COSMETICS + PROFILES + 12;
+        if (waypointsWidth() > 0) {
+        float waypointsHover = animate("waypoints", !isClosing() && Ui.inside(mouseX, mouseY, waypointsX(), top + 8, waypointsWidth(), 22) ? 1 : 0, 16);
+        Ui.rounded(g, waypointsX(), top + 8, waypointsWidth(), 22, 7, Ui.alpha(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, waypointsHover), alpha));
+        Ui.text(g, "Waypoints", waypointsX() + (waypointsWidth() - Ui.width("Waypoints")) / 2f, top + 15, Ui.alpha(Ui.mix(Ui.MUTED, Ui.TEXT, 0.6f + waypointsHover * 0.4f), alpha));
+        }
+        w -= COSMETICS + PROFILES + 12 + (waypointsWidth() > 0 ? waypointsWidth() + 6 : 0);
         Ui.rounded(g, x, top + 8, w, 22, 7, Ui.alpha(Ui.SURFACE, alpha));
         if (query.isEmpty()) {
             Ui.text(g, "Search modules", x + 11, top + 15, Ui.alpha(Ui.MUTED, alpha));
@@ -187,12 +192,15 @@ public final class NicoScreen extends AnimatedScreen {
     }
     private int cosmeticsX() { return contentX() + contentWidth() - COSMETICS; }
     private int profilesX() { return cosmeticsX() - PROFILES - 6; }
+    private int waypointsWidth() { return contentWidth() >= 270 ? 66 : 0; }
+    private int waypointsX() { return profilesX() - waypointsWidth() - 6; }
+    public int[] waypointsCenter() { return new int[] {waypointsX() + waypointsWidth() / 2, top() + 19}; }
     public int[] profilesCenter() { return new int[] {profilesX() + PROFILES / 2, top() + 19}; }
 
     public int[] cosmeticsCenter() { return new int[] {cosmeticsX() + COSMETICS / 2, top() + 19}; }
 
     /** The search text as it is drawn; public so the game test can check what the player sees. */
-    public String displayedQuery() { return Ui.fit(query, contentWidth() - COSMETICS - PROFILES - 36); }
+    public String displayedQuery() { return Ui.fit(query, contentWidth() - COSMETICS - PROFILES - 36 - (waypointsWidth() > 0 ? waypointsWidth() + 6 : 0)); }
 
     public int[] categoryCenter(int index) { return new int[] {left() + 40, top() + ITEMS_TOP + index * (ITEM + ITEM_GAP) + ITEM / 2}; }
 
@@ -215,6 +223,7 @@ public final class NicoScreen extends AnimatedScreen {
             }
         }
         if (Ui.inside(e.x(), e.y(), left + 9, editHudY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new HudEditor()); return true; }
+        if (waypointsWidth() > 0 && Ui.inside(e.x(), e.y(), waypointsX(), top + 8, waypointsWidth(), 22)) { Ui.click(); closeTo(new WaypointScreen(this)); return true; }
         if (Ui.inside(e.x(), e.y(), profilesX(), top + 8, PROFILES, 22)) { Ui.click(); closeTo(new ProfileScreen(this)); return true; }
         if (Ui.inside(e.x(), e.y(), cosmeticsX(), top + 8, COSMETICS, 22)) { Ui.click(); closeTo(new CosmeticsScreen(this)); return true; }
         if (Ui.inside(e.x(), e.y(), left + 9, settingsY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new ModuleSettingsScreen(NicoClientMod.MODULES.client, this)); return true; }
