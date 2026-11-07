@@ -18,7 +18,8 @@ function showPage(page) {
   document.getElementById('page-title').textContent = page.toUpperCase();
   window.scrollTo(0, 0);
   if (page === 'mods') void openModsPage();
-  if (page === 'home') { void refreshStatus(); void refreshSettings(); void renderHomeLook(); }
+  if (page === 'home') { void refreshStatus(); void refreshSettings();
+void refreshProfiles(); void renderHomeLook(); void refreshProfiles(); }
   if (page === 'cosmetics') void openCosmeticsPage();
   if (page === 'settings') void refreshSettings();
 }
@@ -127,6 +128,34 @@ function renderSettings() {
   document.getElementById('server-safe').checked = gameSettings.serverSafe;
 }
 document.getElementById('server-safe').addEventListener('change', event => changeSetting('serverSafe', event.target.checked, settingsStatus));
+// Profiles are saved in the game; the launcher lists them and applies one with a click.
+let lastProfile = null;
+async function refreshProfiles() {
+  const list = document.getElementById('profile-list');
+  let names = [];
+  try { names = await window.nicoClient.profiles(); } catch { /* Shown as empty. */ }
+  list.replaceChildren();
+  document.getElementById('profile-hint').textContent = names.length ? 'Save your own in the game: Right Shift, then Profiles.' : 'Start the game once to get the PvP, Survival and Performance presets.';
+  for (const name of names) {
+    const button = document.createElement('button');
+    button.className = 'profile';
+    button.classList.toggle('active', name === lastProfile);
+    const mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = monogram(name);
+    const label = document.createElement('span'); label.textContent = name;
+    button.append(mono, label);
+    button.addEventListener('click', async () => {
+      try {
+        gameSettings = await window.nicoClient.applyProfile(name);
+        lastProfile = name;
+        renderSettings();
+        toast(`Profile ${name} applied`);
+        void refreshProfiles();
+      } catch (error) { toast(friendlyError(error, 'Could not apply the profile.'), 'bad'); }
+    });
+    list.append(button);
+  }
+}
+
 async function refreshSettings() {
   try { gameSettings = await window.nicoClient.settings(); renderSettings(); }
   catch (error) { quickStatus.textContent = friendlyError(error, 'Could not read the game settings.'); }

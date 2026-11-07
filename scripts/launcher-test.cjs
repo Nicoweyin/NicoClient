@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { installLocalMod, setupOfficialProfile, findOfficialLauncher, profileState } = require('../dist/official-profile.js');
-const { readCosmetics, writeCosmetic, configFile, readSettings, writeSetting } = require('../dist/cosmetics-config.js');
+const { readCosmetics, writeCosmetic, configFile, readSettings, writeSetting, listProfiles, applyProfile } = require('../dist/cosmetics-config.js');
 const { installMod, ensureMod, updateMod, checkModUpdate, installedProjects } = require('../dist/modrinth.js');
 
 const sha1 = bytes => crypto.createHash('sha1').update(bytes).digest('hex');
@@ -274,4 +274,26 @@ test('the launcher switches only listed game settings and keeps the rest', () =>
   const both = await readSettings(dir);
   assert.equal(both.modules.keys && both.modules.coords, true);
   assert.equal((await readCosmetics(dir)).wings, 2);
+}));
+
+test('a profile applies modules and positions but never cosmetics, and only real profiles load', () => withDir(async dir => {
+  assert.deepEqual(await listProfiles(dir), []);
+  const folder = path.join(dir, 'config', 'nicoclient-profiles');
+  await fs.mkdir(folder, { recursive: true });
+  await fs.writeFile(configFile(dir), 'fps.enabled=true\nkeys.enabled=true\ncosmetics.cape=4\nfps.x=5\n');
+  await fs.writeFile(path.join(folder, 'Minimal.properties'), '#preset\nfps.enabled=true\nkeys.enabled=false\n');
+  await fs.writeFile(path.join(folder, 'PvP.properties'), 'keys.enabled=true\n');
+  await fs.writeFile(path.join(folder, 'my setup.properties'), 'keys.enabled=false\nfps.x=40\ncosmetics.cape=9\nclient.welcomed=false\nbad key=1\nzoom.factor=../../x\n');
+  await fs.writeFile(path.join(folder, 'notes.txt'), 'ignore me');
+  assert.deepEqual(await listProfiles(dir), ['PvP', 'Minimal', 'my setup']);
+  const after = await applyProfile(dir, 'my setup');
+  assert.equal(after.modules.keys, false);
+  const text = await fs.readFile(configFile(dir), 'utf8');
+  assert.match(text, /^fps\.x=40$/m);
+  assert.match(text, /^cosmetics\.cape=4$/m);
+  assert.doesNotMatch(text, /welcomed|bad key|\.\.\//);
+  assert.equal((await applyProfile(dir, 'PvP')).modules.keys, true);
+  await assert.rejects(applyProfile(dir, '../config/nicoclient'), /does not exist/);
+  await assert.rejects(applyProfile(dir, 'Nope'), /does not exist/);
+  await assert.rejects(applyProfile(dir, 42), /does not exist/);
 }));

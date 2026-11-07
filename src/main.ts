@@ -1,4 +1,4 @@
-import { readCosmetics, writeCosmetic, readSettings, writeSetting } from './cosmetics-config';
+import { readCosmetics, writeCosmetic, readSettings, writeSetting, listProfiles, applyProfile } from './cosmetics-config';
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } from 'electron';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -126,6 +126,8 @@ void app.whenReady().then(() => {
   ipcMain.handle('mods-installed-projects', async event => { trusted(event); return installedProjects(modsDirectory); });
   ipcMain.handle('cosmetics-get', async event => { trusted(event); return readCosmetics(gameDirectory); });
   ipcMain.handle('cosmetics-set', async (event, slot: string, value: unknown) => { trusted(event); return writeCosmetic(gameDirectory, slot, value); });
+  ipcMain.handle('profiles-list', async event => { trusted(event); return listProfiles(gameDirectory); });
+  ipcMain.handle('profiles-apply', async (event, name: unknown) => { trusted(event); return applyProfile(gameDirectory, name); });
   ipcMain.handle('settings-get', async event => { trusted(event); return readSettings(gameDirectory); });
   ipcMain.handle('settings-set', async (event, name: string, value: unknown) => { trusted(event); return writeSetting(gameDirectory, name, value); });
   ipcMain.handle('mods-search', async (event, query: string, category: string) => { trusted(event); return searchMods(query, category); });

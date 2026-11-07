@@ -2,7 +2,6 @@ package dev.nicoweyin.nicoclient;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
-import net.minecraft.network.chat.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +29,7 @@ public final class ServerSafe {
         restricted = m.serverSafe.on() && onPublicServer(client);
         if (restricted && !wasRestricted && client.player != null) {
             String paused = m.serverRestricted.stream().filter(module -> module.enabled).map(module -> module.name).collect(Collectors.joining(", "));
-            if (!paused.isEmpty()) client.player.displayClientMessage(Component.literal("Server-safe mode paused " + paused), true);
+            if (!paused.isEmpty()) Notify.show("Server-safe mode", "Paused " + paused, Notify.WARN);
         }
         wasRestricted = restricted;
     }

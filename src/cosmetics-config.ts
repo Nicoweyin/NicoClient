@@ -96,6 +96,39 @@ export function writeSetting(gameDirectory: string, name: string, value: unknown
   return queued(() => writeLine(gameDirectory, key, text)).then(() => readSettings(gameDirectory));
 }
 
+// ---- Profiles, written by the game into config/nicoclient-profiles (see Profiles.java).
+const PROFILE_NAME = /^[A-Za-z0-9 _-]{1,24}$/;
+const PROFILE_ORDER = ['PvP', 'Survival', 'Performance', 'Minimal'];
+const PROFILE_KEY = /^[a-z0-9]+\.[a-z0-9]+$/;
+const PROFILE_VALUE = /^[A-Za-z0-9.-]{1,16}$/;
+
+export function profileFolder(gameDirectory: string): string { return path.join(gameDirectory, 'config', 'nicoclient-profiles'); }
+
+/** Profile names, presets first. Empty until the game has run once with profiles. */
+export async function listProfiles(gameDirectory: string): Promise<string[]> {
+  let files: string[] = [];
+  try { files = await fs.readdir(profileFolder(gameDirectory)); } catch { return []; }
+  const names = files.filter(file => file.endsWith('.properties')).map(file => file.slice(0, -'.properties'.length)).filter(name => PROFILE_NAME.test(name) && name.trim() === name);
+  const rank = (name: string) => { const index = PROFILE_ORDER.indexOf(name); return index < 0 ? 99 : index; };
+  return names.sort((a, b) => rank(a) - rank(b) || a.toLowerCase().localeCompare(b.toLowerCase()));
+}
+
+/** Copies a profile's modules, settings and HUD positions into the game settings. Cosmetics stay. */
+export function applyProfile(gameDirectory: string, name: unknown): Promise<GameSettings> {
+  if (typeof name !== 'string' || !PROFILE_NAME.test(name) || name.trim() !== name) return Promise.reject(new Error('That profile does not exist.'));
+  return queued(async () => {
+    let text: string;
+    try { text = await fs.readFile(path.join(profileFolder(gameDirectory), `${name}.properties`), 'utf8'); }
+    catch { throw new Error('That profile does not exist.'); }
+    const values = new Map<string, string>();
+    for (const [key, value] of parse(text)) {
+      if (PROFILE_KEY.test(key) && PROFILE_VALUE.test(value) && !key.startsWith('cosmetics.') && key !== 'client.welcomed') values.set(key, value);
+    }
+    if (!values.size) throw new Error('That profile is empty.');
+    await writeLines(gameDirectory, values);
+  }).then(() => readSettings(gameDirectory));
+}
+
 let queue: Promise<unknown> = Promise.resolve();
 
 /** Writes run one after another, so quick clicks cannot overwrite each other. */
@@ -130,13 +163,20 @@ async function writeNow(gameDirectory: string, slot: string, value: unknown): Pr
 }
 
 /** Replaces or adds one key=value line and keeps every other line as it was. */
-async function writeLine(gameDirectory: string, key: string, text: string): Promise<void> {
+function writeLine(gameDirectory: string, key: string, text: string): Promise<void> {
+  return writeLines(gameDirectory, new Map([[key, text]]));
+}
+
+/** Replaces or adds several key=value lines in one write; every other line stays as it was. */
+async function writeLines(gameDirectory: string, values: Map<string, string>): Promise<void> {
   const file = configFile(gameDirectory);
   let lines: string[] = [];
   try { lines = (await fs.readFile(file, 'utf8')).split(/\r?\n/); } catch { /* Start a new file. */ }
   if (lines.length && lines[lines.length - 1] === '') lines.pop();
-  const index = lines.findIndex(line => line.trim().startsWith(`${key}=`) || line.trim().startsWith(`${key}:`));
-  if (index >= 0) lines[index] = `${key}=${text}`; else lines.push(`${key}=${text}`);
+  for (const [key, text] of values) {
+    const index = lines.findIndex(line => line.trim().startsWith(`${key}=`) || line.trim().startsWith(`${key}:`));
+    if (index >= 0) lines[index] = `${key}=${text}`; else lines.push(`${key}=${text}`);
+  }
   await fs.mkdir(path.dirname(file), { recursive: true });
   // Write a copy first, so the game never reads a half-written file.
   const temporary = `${file}.${process.pid}.tmp`;

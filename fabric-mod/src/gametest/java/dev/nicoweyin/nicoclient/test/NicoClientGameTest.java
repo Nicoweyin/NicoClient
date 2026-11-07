@@ -9,6 +9,9 @@ import dev.nicoweyin.nicoclient.Pickups;
 import dev.nicoweyin.nicoclient.Combat;
 import dev.nicoweyin.nicoclient.Freelook;
 import dev.nicoweyin.nicoclient.ServerSafe;
+import dev.nicoweyin.nicoclient.Notify;
+import dev.nicoweyin.nicoclient.ProfileScreen;
+import dev.nicoweyin.nicoclient.Profiles;
 import dev.nicoweyin.nicoclient.Reconnect;
 import dev.nicoweyin.nicoclient.ArmorWarning;
 import dev.nicoweyin.nicoclient.WaypointScreen;
@@ -162,7 +165,37 @@ public final class NicoClientGameTest implements FabricClientGameTest {
             context.waitTicks(3);
             context.getInput().releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
             context.waitTicks(2);
-            context.runOnClient(client -> check(m.coords.x == coordsStart[0] + 100 && m.coords.y == coordsStart[1] + 30, "dragging moved Coordinates to " + m.coords.x + "," + m.coords.y));
+            // Dragging may snap up to four units onto a nearby line.
+            context.runOnClient(client -> check(Math.abs(m.coords.x - coordsStart[0] - 100) <= 4 && Math.abs(m.coords.y - coordsStart[1] - 30) <= 4, "dragging moved Coordinates to " + m.coords.x + "," + m.coords.y));
+
+            // Dropped two units off the middle of the screen, the module snaps to the exact middle and shows a guide.
+            // Only Coordinates is on here, so no other module edge is closer than the middle.
+            context.runOnClient(client -> m.hudModules.forEach(module -> module.enabled = module == m.coords));
+            context.waitTick();
+            int[] snapTarget = context.computeOnClient(client -> {
+                int w = dev.nicoweyin.nicoclient.HudRenderer.width(m.coords);
+                int screenW = (int) (client.getWindow().getGuiScaledWidth() / dev.nicoweyin.nicoclient.HudRenderer.scale());
+                return new int[] {screenW / 2 - w / 2 + 2, 140, screenW, w};
+            });
+            int[] grab = context.computeOnClient(client -> new int[] {m.coords.x + 6, m.coords.y + 6});
+            moveTo(context, grab[0], grab[1]);
+            context.waitTick();
+            context.getInput().holdMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTick();
+            moveTo(context, snapTarget[0] + 6, snapTarget[1] + 6);
+            context.waitTicks(3);
+            context.takeScreenshot("nicoclient-7b-hud-snap-guide");
+            context.getInput().releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(2);
+            context.runOnClient(client -> {
+                int middle = m.coords.x + snapTarget[3] / 2;
+                check(Math.abs(middle - snapTarget[2] / 2) <= 1, "dragging near the middle snaps Coordinates to it, middle at " + middle + " of " + snapTarget[2]);
+            });
+            // The arrow keys nudge the module last dragged.
+            int nudgeFrom = context.computeOnClient(client -> m.coords.x);
+            context.getInput().pressKey(GLFW.GLFW_KEY_RIGHT);
+            context.waitTicks(2);
+            context.runOnClient(client -> check(m.coords.x == nudgeFrom + 1, "the right arrow moves the module by one, from " + nudgeFrom + " to " + m.coords.x));
             context.setScreen(() -> null);
             context.runOnClient(client -> {
                 m.coords.resetPosition();
@@ -734,6 +767,46 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                 client.options.setCameraType(CameraType.FIRST_PERSON);
                 m.capeStyle.set(0); m.wingStyle.set(0); m.haloStyle.set(0); m.save();
             });
+
+            // A module hotkey shows a notification card instead of a line of text.
+            context.runOnClient(client -> { m.coords.hotkey = GLFW.GLFW_KEY_J; m.coords.enabled = false; });
+            context.getInput().pressKey(GLFW.GLFW_KEY_J);
+            context.waitTicks(4);
+            context.runOnClient(client -> check(m.coords.enabled && Notify.visible().stream().anyMatch(card -> card.title().equals("Coordinates") && card.detail().equals("Enabled")), "a hotkey shows an Enabled card for Coordinates"));
+            context.takeScreenshot("nicoclient-17-notification");
+            context.runOnClient(client -> { m.coords.hotkey = -1; m.save(); });
+
+            // Profiles: the presets exist, the current setup can be saved, a preset loads with a real click, and the saved one brings everything back.
+            context.runOnClient(client -> { m.keys.enabled = true; m.speed.enabled = true; m.coords.x = 77; m.save(); });
+            context.setScreen(NicoScreen::new);
+            context.waitTicks(15);
+            int[] profilesButton = context.computeOnClient(client -> ((NicoScreen) client.screen).profilesCenter());
+            moveTo(context, profilesButton[0], profilesButton[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(15);
+            context.runOnClient(client -> check(client.screen instanceof ProfileScreen screen && screen.shownNames().containsAll(java.util.List.of("PvP", "Survival", "Performance", "Minimal")), "the Profiles button opens the profiles with four presets"));
+            context.getInput().typeChars("My Setup");
+            context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(((ProfileScreen) client.screen).shownNames().contains("My Setup") && Files.isRegularFile(Profiles.folder().resolve("My Setup.properties")), "typing a name and Enter saves a profile"));
+            int[] loadMinimal = context.computeOnClient(client -> ((ProfileScreen) client.screen).loadCenter("Minimal"));
+            moveTo(context, loadMinimal[0], loadMinimal[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(5);
+            context.runOnClient(client -> check(m.fps.enabled && m.zoom.enabled && !m.keys.enabled && !m.speed.enabled && m.coords.x == 77, "loading Minimal leaves only FPS and Zoom on and keeps positions"));
+            context.takeScreenshot("nicoclient-18-profiles");
+            int[] loadMine = context.computeOnClient(client -> ((ProfileScreen) client.screen).loadCenter("My Setup"));
+            moveTo(context, loadMine[0], loadMine[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(5);
+            context.runOnClient(client -> check(m.keys.enabled && m.speed.enabled && m.coords.x == 77, "loading the saved profile brings the modules back"));
+            int[] deleteMine = context.computeOnClient(client -> ((ProfileScreen) client.screen).deleteCenter("My Setup"));
+            moveTo(context, deleteMine[0], deleteMine[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(!((ProfileScreen) client.screen).shownNames().contains("My Setup") && !Files.exists(Profiles.folder().resolve("My Setup.properties")), "Delete removes the profile"));
+            context.setScreen(() -> null);
+            context.runOnClient(client -> { m.keys.enabled = false; m.speed.enabled = false; m.coords.resetPosition(); m.save(); });
 
             // The menu at the other GUI scales players really use.
             for (int scale : new int[] {1, 3}) {

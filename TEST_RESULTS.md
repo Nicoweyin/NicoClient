@@ -105,3 +105,9 @@
 - `npm test`: 18 tests pass, including a new one that only listed settings can be written and that other lines stay.
 - Not tested: Server-safe mode on a real public server, and the installed launcher build.
 - Later the same day: corner messages, a loading state on PLAY, switches for installed mods, placeholder cards while Modrinth loads, a What's new card and page keys. In the real launcher a quick module click showed "Keystrokes on", Ctrl+2 opened Mods, and the Entity Culling switch disabled the mod and enabled it again with the mods folder back as before; screenshots reviewed.
+
+## 2026-11-07: profiles, notifications and HUD snapping (0.8.0)
+- `gradle runClientGameTest` passed in a real client: the Profiles button opens four presets, typing "My Setup" and Enter saves a profile file, a real click on Load for Minimal leaves only FPS and Zoom on while HUD positions stay, loading My Setup brings Keystrokes and Speed back, and Delete removes the file. A module hotkey shows an "Enabled" card (screenshot reviewed, after moving the cards above the hotbar so they no longer cover the top-right HUD column). Dragging Coordinates two units off the middle snapped it to the exact middle with a guide line (screenshot), and the right arrow key moved it by one.
+- The launcher was started with a debug port and two temporary profiles in the real game folder (removed afterward, as the folder did not exist before): a click on Minimal applied it, switched the Keystrokes tile off and showed "Profile Minimal applied". No script errors on any page.
+- `npm test`: 19 tests pass, including that profiles never change cosmetics, skip invalid keys and values, and cannot load files outside the profiles folder.
+- Not tested: profiles on a multiplayer server, and the installed 0.8.0 build.

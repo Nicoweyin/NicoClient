@@ -2,7 +2,11 @@ package dev.nicoweyin.nicoclient;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import org.lwjgl.glfw.GLFW;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.network.chat.Component;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +14,10 @@ import java.util.Map;
 public final class HudEditor extends Screen {
     private static final int RESET_WIDTH = 78, RESET_HEIGHT = 20;
     private final Map<ModuleManager.HudModule, Float> highlight = new HashMap<>();
-    private ModuleManager.HudModule dragging;
+    private static final int SNAP = 4;
+    private ModuleManager.HudModule dragging, selected;
+    /** Lines the dragged module snapped to, in HUD coordinates; drawn as guides. */
+    private final List<Integer> guidesX = new ArrayList<>(), guidesY = new ArrayList<>();
     private int offsetX, offsetY;
     private long lastFrame;
     private float resetHover;
@@ -41,8 +48,15 @@ public final class HudEditor extends Screen {
             String label = module == NicoClientMod.MODULES.keys ? "WASD" : module == NicoClientMod.MODULES.armor ? "Armor" : HudRenderer.hasContent(module) && module != NicoClientMod.MODULES.potions && module != NicoClientMod.MODULES.pickups ? HudRenderer.text(module) : module.name;
             Ui.text(g, Ui.fit(label, w - 6), x + 4, y + Math.min(4, (h - 8) / 2f), Ui.TEXT);
         }
+        if (dragging != null) {
+            int lineColor = Ui.alpha(Ui.accentLight(), 0.8f);
+            for (int x : guidesX) g.fill(x, 0, x + 1, (int) (height / scale) + 1, lineColor);
+            for (int y : guidesY) g.fill(0, y, (int) (width / scale) + 1, y + 1, lineColor);
+        }
         g.pose().popMatrix();
-        String help = any ? "Drag to move   •   Right click to configure   •   Esc to return" : "Enable a HUD module first   •   Esc to return";
+        String help = any ? "Drag to move  •  Shift: no snapping  •  Arrows nudge  •  Right click: settings" : "Enable a HUD module first   •   Esc to return";
+        // Never run under the Reset button on narrow windows.
+        help = Ui.fit(help, (int) resetX() - 34);
         float helpWidth = Ui.width(help) + 20, helpY = resetY();
         Ui.rounded(g, 8, helpY, helpWidth, RESET_HEIGHT, 7, Ui.PANEL);
         Ui.text(g, help, 18, helpY + 6, Ui.MUTED);
@@ -81,7 +95,7 @@ public final class HudEditor extends Screen {
                     Ui.click();
                     minecraft.setScreen(new ModuleSettingsScreen(module, this));
                 } else {
-                    dragging = module; offsetX = (int) px - x; offsetY = (int) py - y;
+                    dragging = selected = module; offsetX = (int) px - x; offsetY = (int) py - y;
                 }
                 return true;
             }
@@ -92,13 +106,66 @@ public final class HudEditor extends Screen {
     @Override public boolean mouseDragged(MouseButtonEvent e, double dx, double dy) {
         if (dragging == null) return super.mouseDragged(e, dx, dy);
         float scale = HudRenderer.scale();
-        dragging.x = clampX((int) (e.x() / scale) - offsetX, HudRenderer.width(dragging));
-        dragging.y = clampY((int) (e.y() / scale) - offsetY, HudRenderer.height(dragging));
+        int w = HudRenderer.width(dragging), h = HudRenderer.height(dragging);
+        int x = clampX((int) (e.x() / scale) - offsetX, w), y = clampY((int) (e.y() / scale) - offsetY, h);
+        guidesX.clear(); guidesY.clear();
+        if (!e.hasShiftDown()) {
+            x = clampX(snap(x, w, (int) (width / scale), true, guidesX), w);
+            y = clampY(snap(y, h, (int) (height / scale), false, guidesY), h);
+        }
+        dragging.x = x; dragging.y = y;
         return true;
     }
 
+    /**
+     * Moves an edge or the middle of the dragged module onto a nearby line: the screen edges and middle,
+     * or the edges of another module. Returns the new position and remembers the line as a guide.
+     */
+    private int snap(int position, int size, int screen, boolean horizontal, List<Integer> guides) {
+        List<Integer> lines = new ArrayList<>(List.of(0, screen / 2, screen));
+        for (ModuleManager.HudModule other : NicoClientMod.MODULES.hudModules) {
+            if (!other.enabled || other == dragging) continue;
+            int start = horizontal ? clampX(other.x, HudRenderer.width(other)) : clampY(other.y, HudRenderer.height(other));
+            int length = horizontal ? HudRenderer.width(other) : HudRenderer.height(other);
+            lines.add(start); lines.add(start + length);
+            lines.add(start - 2); lines.add(start + length + 2);
+        }
+        int best = position, distance = SNAP + 1, guide = -1;
+        for (int line : lines) {
+            int[][] edges = {{position, 0}, {position + size, size}, {position + size / 2, size / 2}};
+            for (int[] edge : edges) {
+                int d = Math.abs(edge[0] - line);
+                if (d < distance) { distance = d; best = line - edge[1]; guide = line; }
+            }
+        }
+        if (guide >= 0) guides.add(guide);
+        return best;
+    }
+
+    /** Arrow keys move the last dragged module by one, or five with Shift. */
+    @Override public boolean keyPressed(KeyEvent e) {
+        if (selected != null) {
+            int step = e.hasShiftDown() ? 5 : 1, dx = 0, dy = 0;
+            switch (e.key()) {
+                case GLFW.GLFW_KEY_LEFT -> dx = -step;
+                case GLFW.GLFW_KEY_RIGHT -> dx = step;
+                case GLFW.GLFW_KEY_UP -> dy = -step;
+                case GLFW.GLFW_KEY_DOWN -> dy = step;
+                default -> { return super.keyPressed(e); }
+            }
+            selected.x = clampX(selected.x + dx, HudRenderer.width(selected));
+            selected.y = clampY(selected.y + dy, HudRenderer.height(selected));
+            NicoClientMod.MODULES.save();
+            return true;
+        }
+        return super.keyPressed(e);
+    }
+
+    /** For the client test. */
+    public void select(ModuleManager.HudModule module) { selected = module; }
+
     @Override public boolean mouseReleased(MouseButtonEvent e) {
-        if (dragging != null) { dragging = null; NicoClientMod.MODULES.save(); return true; }
+        if (dragging != null) { dragging = null; guidesX.clear(); guidesY.clear(); NicoClientMod.MODULES.save(); return true; }
         return super.mouseReleased(e);
     }
 

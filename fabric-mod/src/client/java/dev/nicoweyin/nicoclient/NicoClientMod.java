@@ -43,6 +43,7 @@ public final class NicoClientMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MODULES.load();
+        Profiles.ensurePresets();
         TrajectoryRenderer.register();
         Waypoints.register();
         LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
@@ -72,6 +73,11 @@ public final class NicoClientMod implements ClientModInitializer {
         });
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("nicoclient", "hud"), (graphics, delta) -> HudRenderer.render(graphics));
+        // Notifications sit above the chat and every HUD module.
+        HudElementRegistry.attachElementAfter(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath("nicoclient", "notifications"), (graphics, delta) -> {
+            Minecraft client = Minecraft.getInstance();
+            if (client.player != null && !client.options.hideGui) Notify.render(graphics);
+        });
         HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, vanilla -> (graphics, delta) -> {
             Minecraft client = Minecraft.getInstance();
             if (MODULES.crosshair.enabled && client.options.getCameraType().isFirstPerson() && !client.options.hideGui) HudRenderer.crosshair(graphics);
@@ -93,13 +99,13 @@ public final class NicoClientMod implements ClientModInitializer {
                 if (module.enabled) {
                     Waypoints.Waypoint point = MODULES.waypointMarkBlock.on() ? Waypoints.markBlock(client, null) : null;
                     if (point == null) point = Waypoints.add(client, null);
-                    client.player.displayClientMessage(Component.literal((point.block ? "Marked " : "Saved ") + point.name + " at " + point.coordinates()), true);
+                    Notify.show((point.block ? "Marked " : "Saved ") + point.name, point.coordinates(), Ui.accentLight());
                 }
                 continue;
             }
             module.enabled = !module.enabled;
             MODULES.save();
-            client.player.displayClientMessage(Component.literal(module.name + (module.enabled ? " on" : " off")), true);
+            Notify.module(module);
         }
     }
 
@@ -107,7 +113,7 @@ public final class NicoClientMod implements ClientModInitializer {
         BlockPos pos = client.player.blockPosition();
         String text = pos.getX() + " " + pos.getY() + " " + pos.getZ();
         client.keyboardHandler.setClipboard(text);
-        client.player.displayClientMessage(Component.literal("Copied " + text), true);
+        Notify.show("Coordinates copied", text, Ui.accentLight());
     }
 
     /** Starts sprinting whenever vanilla would allow it, so holding the sprint key is never needed. */

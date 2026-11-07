@@ -14,7 +14,7 @@ import java.util.Locale;
 public final class NicoScreen extends AnimatedScreen {
     private static final String[] CATEGORIES = {"All", "HUD", "Visuals", "Utility", "Performance", "Favorites"};
     private static final int SIDEBAR = 104, ROW = 30, ROW_GAP = 4, ITEM = 18, ITEM_GAP = 2, ITEMS_TOP = 36, FAVORITES = 5;
-    private static final int MAX_QUERY = 40, COSMETICS = 66;
+    private static final int MAX_QUERY = 40, COSMETICS = 66, PROFILES = 54;
     private String query = "";
     private int category;
     private float scroll, scrollTarget;
@@ -80,7 +80,10 @@ public final class NicoScreen extends AnimatedScreen {
         float cosmeticsHover = animate("cosmetics", !isClosing() && Ui.inside(mouseX, mouseY, cosmeticsX(), top + 8, COSMETICS, 22) ? 1 : 0, 16);
         Ui.rounded(g, cosmeticsX(), top + 8, COSMETICS, 22, 7, Ui.alpha(Ui.mix(Ui.accent(), Ui.accentLight(), cosmeticsHover * 0.5f), alpha));
         Ui.text(g, "Cosmetics", cosmeticsX() + (COSMETICS - Ui.width("Cosmetics")) / 2f, top + 15, Ui.alpha(Ui.TEXT, alpha));
-        w -= COSMETICS + 6;
+        float profilesHover = animate("profiles", !isClosing() && Ui.inside(mouseX, mouseY, profilesX(), top + 8, PROFILES, 22) ? 1 : 0, 16);
+        Ui.rounded(g, profilesX(), top + 8, PROFILES, 22, 7, Ui.alpha(Ui.mix(Ui.SURFACE, Ui.SURFACE_HOVER, profilesHover), alpha));
+        Ui.text(g, "Profiles", profilesX() + (PROFILES - Ui.width("Profiles")) / 2f, top + 15, Ui.alpha(Ui.mix(Ui.MUTED, Ui.TEXT, 0.6f + profilesHover * 0.4f), alpha));
+        w -= COSMETICS + PROFILES + 12;
         Ui.rounded(g, x, top + 8, w, 22, 7, Ui.alpha(Ui.SURFACE, alpha));
         if (query.isEmpty()) {
             Ui.text(g, "Search modules", x + 11, top + 15, Ui.alpha(Ui.MUTED, alpha));
@@ -183,11 +186,13 @@ public final class NicoScreen extends AnimatedScreen {
         Ui.text(g, safe ? "Server-safe" : "Online", left + 35, y + 14, Ui.alpha(safe ? 0xFFF2B84B : Ui.mix(Ui.MUTED, 0xFF35C9A0, 0.6f), alpha));
     }
     private int cosmeticsX() { return contentX() + contentWidth() - COSMETICS; }
+    private int profilesX() { return cosmeticsX() - PROFILES - 6; }
+    public int[] profilesCenter() { return new int[] {profilesX() + PROFILES / 2, top() + 19}; }
 
     public int[] cosmeticsCenter() { return new int[] {cosmeticsX() + COSMETICS / 2, top() + 19}; }
 
     /** The search text as it is drawn; public so the game test can check what the player sees. */
-    public String displayedQuery() { return Ui.fit(query, contentWidth() - COSMETICS - 30); }
+    public String displayedQuery() { return Ui.fit(query, contentWidth() - COSMETICS - PROFILES - 36); }
 
     public int[] categoryCenter(int index) { return new int[] {left() + 40, top() + ITEMS_TOP + index * (ITEM + ITEM_GAP) + ITEM / 2}; }
 
@@ -210,6 +215,7 @@ public final class NicoScreen extends AnimatedScreen {
             }
         }
         if (Ui.inside(e.x(), e.y(), left + 9, editHudY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new HudEditor()); return true; }
+        if (Ui.inside(e.x(), e.y(), profilesX(), top + 8, PROFILES, 22)) { Ui.click(); closeTo(new ProfileScreen(this)); return true; }
         if (Ui.inside(e.x(), e.y(), cosmeticsX(), top + 8, COSMETICS, 22)) { Ui.click(); closeTo(new CosmeticsScreen(this)); return true; }
         if (Ui.inside(e.x(), e.y(), left + 9, settingsY(), SIDEBAR - 14, 20)) { Ui.click(); closeTo(new ModuleSettingsScreen(NicoClientMod.MODULES.client, this)); return true; }
         int x = contentX(), w = contentWidth();

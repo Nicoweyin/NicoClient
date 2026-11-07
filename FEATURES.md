@@ -60,9 +60,11 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 47. [x] Per-module toggle keys (choosing and pressing a key checked in client test)
 48. [x] Theme accent selection (client test)
 49. [x] HUD scale settings (client test at 125%)
-50. [ ] Configuration profiles
+50. [x] Configuration profiles with PvP, Survival, Performance and Minimal presets, in the game and on the launcher Home page (real clicks in client test and launcher)
 51. [x] Server-safe mode: pauses Freelook and Trajectories on public servers, on by default (client test with a simulated server; not tried on a real server)
 52. [x] Module rows show a category monogram, their hotkey and why a module is paused; the sidebar shows your face and name (screenshots reviewed)
+54. [x] Animated notification cards above the hotbar for hotkeys, waypoints, profiles and Server-safe mode (client test and screenshot)
+55. [x] HUD editor snaps to screen edges, the middle and other modules with guide lines; Shift for free placement; arrow keys nudge (client test with real mouse and key)
 53. [x] The launcher switches quick modules and sets accent color, HUD size and Server-safe mode; a running game follows within two seconds (launcher clicks and client test)
 
 ## Additional requested modules (planned)

@@ -278,12 +278,27 @@ public final class ModuleManager {
             return false;
         }
         properties.putAll(fresh);
-        for (Module m : withClient()) {
-            String enabled = fresh.getProperty(m.id + ".enabled");
-            if (enabled != null) m.enabled = Boolean.parseBoolean(enabled);
-            for (Setting setting : m.settings) loadSetting(m.id + "." + setting.id, setting);
-        }
+        apply();
         return true;
+    }
+
+    /** Everything a profile keeps: modules, settings, keys and HUD positions, without cosmetics. */
+    public Properties snapshot() {
+        save();
+        Properties copy = new Properties();
+        for (String key : properties.stringPropertyNames()) {
+            if (!key.startsWith(cosmetics.id + ".") && !key.equals("client.welcomed")) copy.setProperty(key, properties.getProperty(key));
+        }
+        return copy;
+    }
+
+    /** Takes over a profile's values; cosmetics stay as they are. */
+    public void applyProfile(Properties values) {
+        for (String key : values.stringPropertyNames()) {
+            if (!key.startsWith(cosmetics.id + ".") && !key.equals("client.welcomed")) properties.setProperty(key, values.getProperty(key));
+        }
+        apply();
+        save();
     }
 
     private List<Module> withClient() { return Stream.concat(modules.stream(), Stream.of(client, cosmetics)).toList(); }
@@ -292,20 +307,25 @@ public final class ModuleManager {
         if (!Files.isRegularFile(path)) return;
         try (Reader reader = Files.newBufferedReader(path)) {
             properties.load(reader);
-            welcomed = Boolean.parseBoolean(properties.getProperty("client.welcomed", "true"));
-            for (Module m : withClient()) {
-                m.enabled = Boolean.parseBoolean(properties.getProperty(m.id + ".enabled", Boolean.toString(m.enabledByDefault)));
-                m.favorite = Boolean.parseBoolean(properties.getProperty(m.id + ".favorite", "false"));
-                m.hotkey = number(m.id + ".key", -1);
-                for (Setting setting : m.settings) loadSetting(m.id + "." + setting.id, setting);
-            }
-            for (HudModule m : hudModules) {
-                m.x = number(m.id + ".x", m.defaultX);
-                m.y = number(m.id + ".y", m.defaultY);
-            }
+            apply();
             knownFileTime = fileTime();
         } catch (IOException | IllegalArgumentException e) {
             System.err.println("NicoClient: unable to read configuration: " + e.getMessage());
+        }
+    }
+
+    /** Sets every module from the stored values; missing values fall back to the defaults. */
+    private void apply() {
+        welcomed = Boolean.parseBoolean(properties.getProperty("client.welcomed", "true"));
+        for (Module m : withClient()) {
+            m.enabled = Boolean.parseBoolean(properties.getProperty(m.id + ".enabled", Boolean.toString(m.enabledByDefault)));
+            m.favorite = Boolean.parseBoolean(properties.getProperty(m.id + ".favorite", "false"));
+            m.hotkey = number(m.id + ".key", -1);
+            for (Setting setting : m.settings) loadSetting(m.id + "." + setting.id, setting);
+        }
+        for (HudModule m : hudModules) {
+            m.x = number(m.id + ".x", m.defaultX);
+            m.y = number(m.id + ".y", m.defaultY);
         }
     }
 

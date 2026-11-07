@@ -1,6 +1,12 @@
 Early development release of NicoClient, an independent launcher and Fabric mod for Minecraft Java 1.21.11.
 
-**New in 0.7.0: a new launcher.** A fresh design with a moving background, a bigger PLAY button and a Play button in the sidebar.
+**New in 0.8.0: profiles, notifications and a smarter HUD editor.**
+- **Profiles:** save your modules, settings and HUD layout under a name and switch with one click. Four presets come with it: PvP, Survival, Performance and Minimal. Open them in the game (Right Shift, then Profiles) or apply them from the launcher's Home page. Cosmetics are never changed by a profile.
+- **Notifications:** switching a module by its key, saving a waypoint or loading a profile shows a small animated card above the hotbar.
+- **HUD editor:** modules snap to the screen edges, the middle and other modules, with a guide line while you drag. Hold Shift to place freely, and use the arrow keys to move the last module by one (five with Shift).
+- A running game now also takes HUD positions and key bindings from changes made in the launcher.
+
+**0.7.0: a new launcher.** A fresh design with a moving background, a bigger PLAY button and a Play button in the sidebar.
 - Switch twelve popular modules right from the Home page, and see your cosmetics there.
 - Pick the accent color, HUD size and Server-safe mode in Settings. The color applies to the launcher and the game; a running game follows within two seconds.
 - Filter Modrinth mods by Performance, Utility, Decoration, Storage and Libraries.

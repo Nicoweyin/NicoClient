@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('nicoClient', {
   cosmetics: () => ipcRenderer.invoke('cosmetics-get'),
   setCosmetic: (slot: string, value: number | boolean) => ipcRenderer.invoke('cosmetics-set', slot, value),
   settings: () => ipcRenderer.invoke('settings-get'),
+  profiles: () => ipcRenderer.invoke('profiles-list'),
+  applyProfile: (name: string) => ipcRenderer.invoke('profiles-apply', name),
   setSetting: (name: string, value: number | boolean) => ipcRenderer.invoke('settings-set', name, value),
   installedProjects: () => ipcRenderer.invoke('mods-installed-projects'),
   updateMod: (name: string) => ipcRenderer.invoke('mods-update', name),
