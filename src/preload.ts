@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 contextBridge.exposeInMainWorld('nicoClient', {
   openModsFolder: (): Promise<void> => ipcRenderer.invoke('open-mods-folder'),
@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('nicoClient', {
   strayMods: () => ipcRenderer.invoke('mods-stray'),
   scanImport: () => ipcRenderer.invoke('mods-import-scan'),
   importMods: () => ipcRenderer.invoke('mods-import'),
+  // Dropped files only reveal their path here, in the preload; the page never sees it otherwise.
+  addModFiles: (files: File[]) => ipcRenderer.invoke('mods-add-files', Array.from(files).map(file => webUtils.getPathForFile(file)).filter(Boolean)),
   onModsChanged: (callback: () => void) => ipcRenderer.on('mods-changed', () => callback()),
   installMod: (id: string) => ipcRenderer.invoke('mods-install', id),
   changeMod: (name: string, action: string) => ipcRenderer.invoke('mods-change', name, action),

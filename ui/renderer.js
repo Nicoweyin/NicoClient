@@ -451,3 +451,28 @@ document.getElementById('open-game').addEventListener('click', async () => {
   try { await window.nicoClient.openGameFolder(); }
   catch { document.getElementById('mods-status').textContent = 'Could not open the game folder.'; }
 });
+
+// Drag mods onto the window: they are copied into the NicoClient mods folder.
+(() => {
+  const zone = document.getElementById('drop-zone');
+  let depth = 0;
+  const hasFiles = event => [...(event.dataTransfer?.types || [])].includes('Files');
+  window.addEventListener('dragenter', event => { if (!hasFiles(event)) return; event.preventDefault(); depth++; zone.hidden = false; });
+  window.addEventListener('dragover', event => { if (!hasFiles(event)) return; event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; });
+  window.addEventListener('dragleave', event => { if (!hasFiles(event)) return; depth = Math.max(0, depth - 1); if (!depth) zone.hidden = true; });
+  window.addEventListener('drop', async event => {
+    if (!hasFiles(event)) return;
+    event.preventDefault(); depth = 0; zone.hidden = true;
+    const files = [...event.dataTransfer.files];
+    if (!files.length) return;
+    try {
+      const result = await window.nicoClient.addModFiles(files);
+      if (result.added.length) toast(`${result.added.length} mod${result.added.length === 1 ? '' : 's'} installed`);
+      if (result.skipped.length) toast(`${result.skipped.length} left out: ${result.skipped.slice(0, 2).map(item => `${item.file} (${item.reason})`).join(', ')}${result.skipped.length > 2 ? ' …' : ''}`, result.added.length ? undefined : 'bad');
+      modStatus.textContent = [result.added.length ? `Installed ${result.added.join(', ')}. Restart Minecraft to load them.` : '', ...result.skipped.map(item => `${item.file}: ${item.reason}.`)].filter(Boolean).join(' ');
+      showPage('mods');
+      await refreshMods();
+      document.getElementById('installed-mods').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (error) { toast(friendlyError(error, 'Could not install the dropped files.'), 'bad'); }
+  });
+})();

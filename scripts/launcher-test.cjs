@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
 const { installLocalMod, setupOfficialProfile, findOfficialLauncher, profileState } = require('../dist/official-profile.js');
 const { readCosmetics, writeCosmetic, configFile, readSettings, writeSetting, listProfiles, applyProfile } = require('../dist/cosmetics-config.js');
 const { installMod, ensureMod, updateMod, checkModUpdate, installedProjects } = require('../dist/modrinth.js');
-const { describeJar, versionMatches, importCandidates, importMods, strayFiles, problem } = require('../dist/mod-files.js');
+const { describeJar, versionMatches, importCandidates, importMods, strayFiles, problem, addModFiles } = require('../dist/mod-files.js');
 const zlib = require('node:zlib');
 
 // A minimal JAR (ZIP) with the given files, the first one deflated, the rest stored.
@@ -350,4 +350,18 @@ test('importing copies only new, compatible mods and never overwrites or deletes
   assert.deepEqual((await importMods(from, to)).imported, [], 'a second import adds nothing');
   await fs.writeFile(path.join(to, 'shaders.zip'), 'x'); await fs.mkdir(path.join(to, 'more mods'));
   assert.deepEqual((await strayFiles(to)).sort(), ['more mods/', 'shaders.zip']);
+}));
+
+test('dropped mods are copied in, originals stay, bad files are explained', () => withDir(async dir => {
+  const downloads = path.join(dir, 'Downloads'), to = path.join(dir, 'mods');
+  await fs.mkdir(downloads); await fs.mkdir(to);
+  const put = async (name, bytes) => { await fs.writeFile(path.join(downloads, name), bytes); return path.join(downloads, name); };
+  const files = [await put('sodium.jar', fabricJar('sodium', '*')), await put('pack.zip', 'x'), await put('forge.jar', jar({ 'META-INF/mods.toml': 'x' })), await put('sodium-again.jar', fabricJar('sodium', '*'))];
+  const result = await addModFiles(files, to);
+  assert.deepEqual(result.added, ['SODIUM']);
+  assert.deepEqual(result.skipped.map(item => item.reason), ['A .zip: unpack it first', 'Forge mod: does not run on Fabric', 'Already in NicoClient']);
+  assert.deepEqual(await fs.readdir(to), ['sodium.jar']);
+  assert.equal((await fs.readdir(downloads)).length, 4, 'the dropped originals are still there');
+  await assert.rejects(addModFiles('nope', to), /Invalid/);
+  assert.equal((await addModFiles(['relative.jar'], to)).skipped[0].reason, 'Not a file on this PC');
 }));

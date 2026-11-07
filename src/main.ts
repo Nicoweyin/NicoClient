@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, watch } from 'node:fs';
 import path from 'node:path';
 import { setupUpdater } from './updater';
 import { searchMods, listMods, installMod, changeMod, checkModUpdate, updateMod, installedProjects } from './modrinth';
-import { describeJar, problem, importCandidates, importMods, strayFiles } from './mod-files';
+import { describeJar, problem, importCandidates, importMods, strayFiles, addModFiles } from './mod-files';
 import { findOfficialLauncher, profileState, setupOfficialProfile } from './official-profile';
 import { spawn } from 'node:child_process';
 
@@ -161,6 +161,10 @@ void app.whenReady().then(() => {
   ipcMain.handle('mods-import', async event => {
     trusted(event); if (modsBusy) throw new Error('Another mod operation is running.');
     modsBusy = true; try { return await importMods(path.join(minecraftDirectory(), 'mods'), modsDirectory); } finally { modsBusy = false; }
+  });
+  ipcMain.handle('mods-add-files', async (event, files: unknown) => {
+    trusted(event); if (modsBusy) throw new Error('Another mod operation is running.');
+    modsBusy = true; try { return await addModFiles(files, modsDirectory); } finally { modsBusy = false; }
   });
   watchMods();
   ipcMain.handle('mods-update-check', async (event, name: string) => { trusted(event); return checkModUpdate(modsDirectory, name); });

@@ -1,5 +1,8 @@
 Early development release of NicoClient, an independent launcher and Fabric mod for Minecraft Java 1.21.11.
 
+**Coming next:**
+- **Drag and drop:** drag mod files onto the launcher window to install them. They are copied, so the originals stay where they were; .zip files, Forge mods and duplicates are explained instead.
+
 **New in 0.8.1: import your mods.**
 - **Import mods:** the Mods page finds mods in your normal Minecraft folder and imports them in one click. It copies only Fabric 1.21.11 mods that are not there yet, and never touches the originals.
 - Mods dropped into the folder show up at once, and the list names Forge mods, mods for other versions and stray .zip files that would not load.

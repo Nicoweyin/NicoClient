@@ -184,6 +184,36 @@ export async function importCandidates(from: string, to: string): Promise<Import
 /** Feather and similar launchers name files "mod.temp.jar"; the copy gets the plain name. */
 function targetName(name: string): string { return name.replace(/\.temp\.jar$/i, '.jar'); }
 
+/**
+ * Installs mod files dropped onto the launcher. Always copies, so the originals stay where they were.
+ * Each file comes back added or with the reason it was left out.
+ */
+export async function addModFiles(files: unknown, to: string): Promise<{ added: string[]; skipped: { file: string; reason: string }[] }> {
+  if (!Array.isArray(files) || files.length > 200 || files.some(file => typeof file !== 'string')) throw new Error('Invalid file list.');
+  if (!await realDirectory(to)) throw new Error('Mods directory must be a real directory.');
+  const ownIds = new Set<string>();
+  for (const entry of await readdir(to)) if (/\.jar(?:\.disabled)?$/i.test(entry)) { const info = await describeJar(path.join(to, entry)); if (info.id) ownIds.add(info.id); }
+  const added: string[] = [], skipped: { file: string; reason: string }[] = [];
+  for (const source of files as string[]) {
+    const file = path.basename(source);
+    if (!path.isAbsolute(source)) { skipped.push({ file, reason: 'Not a file on this PC' }); continue; }
+    if (!/\.jar$/i.test(file)) { skipped.push({ file, reason: /\.zip$/i.test(file) ? 'A .zip: unpack it first' : 'Not a mod file (.jar)' }); continue; }
+    const stat = await lstat(source).catch(() => undefined);
+    if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 200 * 1024 * 1024) { skipped.push({ file, reason: 'Not a regular file' }); continue; }
+    if (path.resolve(path.dirname(source)).toLowerCase() === path.resolve(to).toLowerCase()) { skipped.push({ file, reason: 'Already in NicoClient' }); continue; }
+    const info = await describeJar(source);
+    const issue = problem(info);
+    if (issue) { skipped.push({ file, reason: issue }); continue; }
+    if (info.id && ownIds.has(info.id)) { skipped.push({ file, reason: 'Already in NicoClient' }); continue; }
+    try {
+      await copyFile(source, path.join(to, targetName(file)), constants.COPYFILE_EXCL);
+      if (info.id) ownIds.add(info.id);
+      added.push(info.title || file);
+    } catch { skipped.push({ file, reason: 'A file with this name is already there' }); }
+  }
+  return { added, skipped };
+}
+
 /** Copies every importable mod. Never overwrites a file, and never imports two copies of one mod. */
 export async function importMods(from: string, to: string): Promise<{ imported: string[]; skipped: number }> {
   if (!await realDirectory(to)) throw new Error('Mods directory must be a real directory.');

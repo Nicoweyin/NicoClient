@@ -257,3 +257,10 @@ kbd{font:inherit;font-size:11px;font-weight:700;color:var(--text);background:#1d
 .import-list li.incompatible span:last-child { color: #f2b84b; }
 .notice.warn { color: #f2b84b; }
 .installed-row .problem { color: #f2b84b; }
+
+/* Drag mods onto the window to install them */
+.drop-zone { position: fixed; inset: 14px; z-index: 50; display: grid; place-items: center; border: 2px dashed rgba(var(--accent-rgb), .8); border-radius: 22px; background: rgba(8, 10, 19, .82); backdrop-filter: blur(6px); pointer-events: none; }
+.drop-zone[hidden] { display: none; }
+.drop-zone div { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 0 24px; }
+.drop-zone strong { font-size: 26px; }
+.drop-zone small { color: var(--muted); }
