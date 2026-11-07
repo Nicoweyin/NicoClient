@@ -191,6 +191,7 @@ public final class ModuleManager {
     public final Setting zoomSmooth = zoom.toggle("smooth", "Smooth zoom", true);
     public final Setting brightness = fullbright.choice("brightness", "Brightness", 100, new String[] {"60%", "80%", "100%"}, 60, 80, 100);
     public final Setting trajectoryMarker = trajectories.toggle("marker", "Impact marker", true);
+    public final Setting trajectoryBlock = trajectories.toggle("hitblock", "Glow on the block it hits", true);
     public final Setting clock24 = clock.toggle("24h", "24-hour clock", true);
     public final Setting clockSeconds = clock.toggle("seconds", "Show seconds", false);
     public final Setting directionShort = direction.toggle("short", "Short form", false);

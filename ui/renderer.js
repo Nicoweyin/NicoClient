@@ -283,10 +283,16 @@ async function refreshMods() {
     for (const mod of mods) {
       const row = document.createElement('div'); row.className = 'installed-row';
       const about = describeMod(mod.name);
+      if (mod.title && !about.required) about.title = mod.title;
+      if (mod.version) about.detail = mod.version;
       const label = document.createElement('div'); label.className = 'installed-name';
       const title = document.createElement('strong'); title.textContent = about.title;
       const detail = document.createElement('small'); detail.textContent = [about.detail, about.required ? 'Required' : mod.enabled ? '' : 'Disabled'].filter(Boolean).join(' · ');
       label.append(title, detail);
+      if (mod.problem && mod.enabled) {
+        const warning = document.createElement('small'); warning.className = 'problem'; warning.textContent = `⚠ ${mod.problem}. It will not load; Minecraft may not start.`;
+        label.append(warning);
+      }
       const mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = monogram(about.title);
       const left = document.createElement('div'); left.className = 'installed-left'; left.append(mono, label);
       row.append(left);
@@ -330,8 +336,65 @@ async function refreshMods() {
       row.append(actions); container.append(row);
     }
   } catch { container.textContent = 'Could not read the NicoClient mods folder.'; }
+  void refreshImport();
+  void refreshStray();
 }
 document.getElementById('refresh-mods').addEventListener('click', refreshMods);
+document.getElementById('open-mods-here').addEventListener('click', async () => {
+  try { await window.nicoClient.openModsFolder(); } catch { toast('Could not open the mods folder', 'bad'); }
+});
+// Mods dropped into the folder show up at once.
+window.nicoClient.onModsChanged(() => { void refreshMods(); });
+
+// Mods from the normal Minecraft folder (.minecraft\mods) can come over in one click.
+let importBusy = false;
+async function refreshImport() {
+  const card = document.getElementById('import-card');
+  let found = [];
+  try { found = await window.nicoClient.scanImport(); } catch { card.hidden = true; return; }
+  const ready = found.filter(item => item.status === 'ready');
+  const incompatible = found.filter(item => item.status === 'incompatible');
+  if (!ready.length) { card.hidden = true; return; }
+  card.hidden = false;
+  document.getElementById('import-title').textContent = `${ready.length} mod${ready.length === 1 ? '' : 's'} found in your normal Minecraft folder`;
+  document.getElementById('import-text').textContent = 'NicoClient uses its own mods folder. Import them to use them here' + (incompatible.length ? `; ${incompatible.length === 1 ? 'one that would not run is' : incompatible.length + ' that would not run are'} left out.` : '.');
+  const button = document.getElementById('import-mods');
+  button.textContent = `Import ${ready.length === 1 ? 'mod' : `all ${ready.length}`}`;
+  const list = document.getElementById('import-list');
+  list.replaceChildren(...found.map(item => {
+    const li = document.createElement('li'); li.className = item.status;
+    const name = document.createElement('span'); name.textContent = item.title;
+    const state = document.createElement('span'); state.textContent = item.status === 'ready' ? 'Will be imported' : item.reason;
+    li.append(name, state); return li;
+  }));
+}
+document.getElementById('import-details').addEventListener('click', event => {
+  const list = document.getElementById('import-list');
+  list.hidden = !list.hidden;
+  event.target.textContent = list.hidden ? 'Details' : 'Hide';
+});
+document.getElementById('import-mods').addEventListener('click', async event => {
+  if (importBusy) return;
+  importBusy = true; event.target.disabled = true;
+  try {
+    const result = await window.nicoClient.importMods();
+    const count = result.imported.length;
+    toast(count ? `${count} mod${count === 1 ? '' : 's'} imported` : 'Nothing new to import');
+    modStatus.textContent = count ? `Imported ${result.imported.join(', ')}. Restart Minecraft to load them.` : '';
+    await refreshMods();
+  } catch (error) { toast(friendlyError(error, 'Import failed.'), 'bad'); }
+  finally { importBusy = false; event.target.disabled = false; }
+});
+async function refreshStray() {
+  const note = document.getElementById('stray-files');
+  let stray = [];
+  try { stray = await window.nicoClient.strayMods(); } catch { /* not important */ }
+  note.hidden = !stray.length;
+  if (stray.length) {
+    const shown = stray.slice(0, 4).join(', ') + (stray.length > 4 ? ` and ${stray.length - 4} more` : '');
+    note.textContent = `⚠ Minecraft ignores ${shown}. Mods must be .jar files directly in the mods folder: unpack .zip downloads and move mods out of subfolders.`;
+  }
+}
 // Only the newest search may fill the list, however the answers arrive.
 let searchNumber = 0;
 async function runSearch() {

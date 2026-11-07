@@ -1,9 +1,10 @@
 import { readCosmetics, writeCosmetic, readSettings, writeSetting, listProfiles, applyProfile } from './cosmetics-config';
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } from 'electron';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, watch } from 'node:fs';
 import path from 'node:path';
 import { setupUpdater } from './updater';
 import { searchMods, listMods, installMod, changeMod, checkModUpdate, updateMod, installedProjects } from './modrinth';
+import { describeJar, problem, importCandidates, importMods, strayFiles } from './mod-files';
 import { findOfficialLauncher, profileState, setupOfficialProfile } from './official-profile';
 import { spawn } from 'node:child_process';
 
@@ -46,6 +47,18 @@ function openOfficialLauncher(): Promise<void> {
     child.once('spawn', () => { child.unref(); resolve(); });
     child.once('error', () => reject(new Error('Could not open the official Minecraft Launcher. Start it from the Windows Start menu.')));
   });
+}
+
+/** Tells the window when files appear in or leave the mods folder, so the list never needs a manual refresh. */
+function watchMods(): void {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    mkdirSync(modsDirectory, { recursive: true });
+    watch(modsDirectory, () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { for (const window of BrowserWindow.getAllWindows()) if (!window.webContents.isDestroyed()) window.webContents.send('mods-changed'); }, 500);
+    });
+  } catch { /* Without watching, Refresh still works. */ }
 }
 
 function createWindow(): void {
@@ -131,7 +144,25 @@ void app.whenReady().then(() => {
   ipcMain.handle('settings-get', async event => { trusted(event); return readSettings(gameDirectory); });
   ipcMain.handle('settings-set', async (event, name: string, value: unknown) => { trusted(event); return writeSetting(gameDirectory, name, value); });
   ipcMain.handle('mods-search', async (event, query: string, category: string) => { trusted(event); return searchMods(query, category); });
-  ipcMain.handle('mods-list', async event => { trusted(event); return listMods(modsDirectory); });
+  ipcMain.handle('mods-list', async event => {
+    trusted(event);
+    const mods = await listMods(modsDirectory);
+    return Promise.all(mods.map(async mod => {
+      const info = await describeJar(path.join(modsDirectory, mod.name));
+      return { ...mod, title: info.title, version: info.version, problem: problem(info) };
+    }));
+  });
+  ipcMain.handle('mods-stray', async event => { trusted(event); return strayFiles(modsDirectory); });
+  ipcMain.handle('mods-import-scan', async event => {
+    trusted(event);
+    const found = await importCandidates(path.join(minecraftDirectory(), 'mods'), modsDirectory);
+    return found.map(item => ({ file: item.file, title: item.title || item.file, status: item.status, reason: item.reason }));
+  });
+  ipcMain.handle('mods-import', async event => {
+    trusted(event); if (modsBusy) throw new Error('Another mod operation is running.');
+    modsBusy = true; try { return await importMods(path.join(minecraftDirectory(), 'mods'), modsDirectory); } finally { modsBusy = false; }
+  });
+  watchMods();
   ipcMain.handle('mods-update-check', async (event, name: string) => { trusted(event); return checkModUpdate(modsDirectory, name); });
   ipcMain.handle('mods-change', async (event, name: string, action: string) => {
     trusted(event); if (modsBusy) throw new Error('Another mod operation is running.');

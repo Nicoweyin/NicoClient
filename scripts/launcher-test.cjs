@@ -8,6 +8,25 @@ const crypto = require('node:crypto');
 const { installLocalMod, setupOfficialProfile, findOfficialLauncher, profileState } = require('../dist/official-profile.js');
 const { readCosmetics, writeCosmetic, configFile, readSettings, writeSetting, listProfiles, applyProfile } = require('../dist/cosmetics-config.js');
 const { installMod, ensureMod, updateMod, checkModUpdate, installedProjects } = require('../dist/modrinth.js');
+const { describeJar, versionMatches, importCandidates, importMods, strayFiles, problem } = require('../dist/mod-files.js');
+const zlib = require('node:zlib');
+
+// A minimal JAR (ZIP) with the given files, the first one deflated, the rest stored.
+function jar(files) {
+  const locals = [], central = []; let offset = 0;
+  Object.entries(files).forEach(([name, text], index) => {
+    const raw = Buffer.from(text), data = index === 0 ? zlib.deflateRawSync(raw) : raw, method = index === 0 ? 8 : 0;
+    const nameBytes = Buffer.from(name);
+    const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(method, 8); local.writeUInt32LE(data.length, 18); local.writeUInt32LE(raw.length, 22); local.writeUInt16LE(nameBytes.length, 26);
+    const entry = Buffer.alloc(46); entry.writeUInt32LE(0x02014b50, 0); entry.writeUInt16LE(method, 10); entry.writeUInt32LE(data.length, 20); entry.writeUInt32LE(raw.length, 24); entry.writeUInt16LE(nameBytes.length, 28); entry.writeUInt32LE(offset, 42);
+    locals.push(local, nameBytes, data); central.push(entry, nameBytes);
+    offset += 30 + nameBytes.length + data.length;
+  });
+  const dir = Buffer.concat(central), end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(central.length / 2, 8); end.writeUInt16LE(central.length / 2, 10); end.writeUInt32LE(dir.length, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, dir, end]);
+}
+const fabricJar = (id, minecraft, extra = {}) => jar({ 'fabric.mod.json': JSON.stringify({ id, name: id.toUpperCase(), version: '1.0', depends: minecraft ? { minecraft } : {} }), ...extra });
 
 const sha1 = bytes => crypto.createHash('sha1').update(bytes).digest('hex');
 const sha512 = bytes => crypto.createHash('sha512').update(bytes).digest('hex');
@@ -296,4 +315,39 @@ test('a profile applies modules and positions but never cosmetics, and only real
   await assert.rejects(applyProfile(dir, '../config/nicoclient'), /does not exist/);
   await assert.rejects(applyProfile(dir, 'Nope'), /does not exist/);
   await assert.rejects(applyProfile(dir, 42), /does not exist/);
+}));
+
+test('Fabric version predicates match 1.21.11 like Fabric does', () => {
+  for (const yes of ['*', '1.21.11', '>=1.21.9 <1.22', '~1.21.11', '1.21.x', '>=1.21', '^1.21.0']) assert.equal(versionMatches(yes), true, yes);
+  for (const no of ['1.20.1', '>=1.21 <=1.21.4', '<1.21.11', '1.20.x', '~1.21.5 <1.21.10']) assert.equal(versionMatches(no), false, no);
+});
+
+test('mod JARs explain themselves: Fabric, Forge, wrong version, Feather', () => withDir(async dir => {
+  const write = async (name, bytes) => { await fs.writeFile(path.join(dir, name), bytes); return path.join(dir, name); };
+  const good = await describeJar(await write('good.jar', fabricJar('sodium', ['>=1.21.11', '1.21.x'])));
+  assert.deepEqual([good.id, good.title, good.loader, good.fitsGame, problem(good)], ['sodium', 'SODIUM', 'fabric', true, '']);
+  assert.match(problem(await describeJar(await write('old.jar', fabricJar('old', '1.20.1')))), /Made for Minecraft 1\.20\.1/);
+  assert.match(problem(await describeJar(await write('forge.jar', jar({ 'META-INF/mods.toml': 'modLoader="javafml"' })))), /Forge/);
+  assert.match(problem(await describeJar(await write('feather.jar', fabricJar('feather', '1.21.11')))), /Feather/);
+  assert.equal(problem(await describeJar(await write('broken.jar', 'not a zip'))), 'Not a Fabric mod');
+}));
+
+test('importing copies only new, compatible mods and never overwrites or deletes', () => withDir(async dir => {
+  const from = path.join(dir, '.minecraft', 'mods'), to = path.join(dir, 'NicoClient', 'mods');
+  await fs.mkdir(from, { recursive: true }); await fs.mkdir(to, { recursive: true });
+  await fs.writeFile(path.join(from, 'sodium-1.0.temp.jar'), fabricJar('sodium', '>=1.21'));
+  await fs.writeFile(path.join(from, 'fabric-api-old.jar'), fabricJar('fabric-api', '*'));
+  await fs.writeFile(path.join(from, 'forge-mod.jar'), jar({ 'META-INF/mods.toml': 'x' }));
+  await fs.writeFile(path.join(from, 'old.jar'), fabricJar('old', '1.20.1'));
+  await fs.writeFile(path.join(from, 'sodium-copy.jar'), fabricJar('sodium', '*'));
+  await fs.writeFile(path.join(to, 'fabric-api-new.jar'), fabricJar('fabric-api', '*'));
+  const found = Object.fromEntries((await importCandidates(from, to)).map(item => [item.file, item.status]));
+  assert.deepEqual(found, { 'fabric-api-old.jar': 'installed', 'forge-mod.jar': 'incompatible', 'old.jar': 'incompatible', 'sodium-1.0.temp.jar': 'ready', 'sodium-copy.jar': 'installed' });
+  const result = await importMods(from, to);
+  assert.deepEqual(result.imported, ['SODIUM']);
+  assert.deepEqual((await fs.readdir(to)).sort(), ['fabric-api-new.jar', 'sodium-1.0.jar']);
+  assert.equal((await fs.readdir(from)).length, 5, 'the normal Minecraft folder is left as it was');
+  assert.deepEqual((await importMods(from, to)).imported, [], 'a second import adds nothing');
+  await fs.writeFile(path.join(to, 'shaders.zip'), 'x'); await fs.mkdir(path.join(to, 'more mods'));
+  assert.deepEqual((await strayFiles(to)).sort(), ['more mods/', 'shaders.zip']);
 }));

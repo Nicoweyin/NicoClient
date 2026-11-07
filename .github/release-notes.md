@@ -1,5 +1,10 @@
 Early development release of NicoClient, an independent launcher and Fabric mod for Minecraft Java 1.21.11.
 
+**Coming next:**
+- **Import mods:** the Mods page finds mods in your normal Minecraft folder and imports them in one click. It copies only Fabric 1.21.11 mods that are not there yet, and never touches the originals.
+- Mods dropped into the folder show up at once, and the list names Forge mods, mods for other versions and stray .zip files that would not load.
+- **Trajectories:** the block your shot will hit glows red (Glow on the block it hits, in its settings).
+
 **New in 0.8.0: profiles, notifications and a smarter HUD editor.**
 - **Profiles:** save your modules, settings and HUD layout under a name and switch with one click. Four presets come with it: PvP, Survival, Performance and Minimal. Open them in the game (Right Shift, then Profiles) or apply them from the launcher's Home page. Cosmetics are never changed by a profile.
 - **Notifications:** switching a module by its key, saving a waypoint or loading a profile shows a small animated card above the hotbar.

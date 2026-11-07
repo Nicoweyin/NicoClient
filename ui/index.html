@@ -76,7 +76,11 @@
           <p id="mod-status" class="notice" role="status"></p><progress id="mod-progress" max="100" value="0" hidden></progress>
           <div id="mod-results" class="mod-grid"></div>
         </div>
-        <div class="panel"><div class="section-bar"><div><div class="eyebrow">YOUR INSTANCE</div><h2>Installed mods</h2></div><div class="button-row"><button class="secondary" id="check-all-mods">Check for updates</button><button class="secondary" id="refresh-mods">Refresh</button></div></div><div id="installed-mods"></div></div>
+        <div class="panel"><div class="section-bar"><div><div class="eyebrow">YOUR INSTANCE</div><h2>Installed mods</h2></div><div class="button-row"><button class="secondary" id="open-mods-here">Open folder</button><button class="secondary" id="check-all-mods">Check for updates</button><button class="secondary" id="refresh-mods">Refresh</button></div></div>
+          <div class="import-card" id="import-card" hidden><div><strong id="import-title"></strong><small id="import-text"></small></div><div class="button-row"><button class="secondary" id="import-details">Details</button><button class="primary" id="import-mods">Import all</button></div><ul class="import-list" id="import-list" hidden></ul></div>
+          <p class="notice warn" id="stray-files" hidden></p>
+          <div id="installed-mods"></div>
+          <p class="notice">NicoClient keeps its own mods folder, apart from your normal Minecraft. Drop Fabric 1.21.11 mods (.jar) into it and they show up here at once.</p></div>
       </section>
 
       <section class="page" id="cosmetics"><div class="section-heading"><div class="eyebrow">LOOK THE PART</div><h1>Cosmetics<span class="accent">.</span></h1><p>Capes, wings, halos and trails for your player. Only you can see them in the game.</p></div>

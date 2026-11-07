@@ -245,3 +245,15 @@ kbd{font:inherit;font-size:11px;font-weight:700;color:var(--text);background:#1d
 .profile.active{border-color:var(--accent);background:linear-gradient(150deg,rgba(var(--accent-rgb),.25),#0c1020)}
 .profile .mono{display:grid;place-items:center;width:26px;height:26px;flex-shrink:0;border-radius:8px;font-size:11px;font-weight:800;background:rgba(var(--accent-rgb),.25)}
 .profiles .notice{margin-top:10px}
+
+/* Import mods from the normal Minecraft folder */
+.import-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(var(--accent-rgb), .45); background: linear-gradient(135deg, rgba(var(--accent-rgb), .16), rgba(var(--accent-rgb), .04)); }
+.import-card > div:first-child { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.import-card small { color: var(--muted); }
+.import-list { flex-basis: 100%; list-style: none; margin: 4px 0 0; padding: 0; max-height: 220px; overflow-y: auto; display: grid; gap: 4px; }
+.import-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, .03); font-size: 12px; }
+.import-list li span:last-child { color: var(--muted); text-align: right; }
+.import-list li.ready span:last-child { color: #35c9a0; }
+.import-list li.incompatible span:last-child { color: #f2b84b; }
+.notice.warn { color: #f2b84b; }
+.installed-row .problem { color: #f2b84b; }
