@@ -3,5 +3,6 @@
   "key.nicoclient.fps": "Toggle FPS HUD",
   "key.nicoclient.menu": "Open NicoClient",
   "key.nicoclient.zoom": "Hold Zoom",
-  "key.nicoclient.freelook": "Hold Freelook"
+  "key.nicoclient.freelook": "Hold Freelook",
+  "key.nicoclient.waypoints": "Open Waypoints"
 }

@@ -27,7 +27,7 @@ import org.lwjgl.glfw.GLFW;
 
 public final class NicoClientMod implements ClientModInitializer {
     public static final ModuleManager MODULES = new ModuleManager();
-    public static KeyMapping zoomKey, menuKey, freelookKey;
+    public static KeyMapping zoomKey, menuKey, freelookKey, waypointKey;
     private static boolean sprintApplied, sneakApplied, fogApplied, wasDead;
     private static long lastToolWarning;
     private static int configChecks;
@@ -54,10 +54,12 @@ public final class NicoClientMod implements ClientModInitializer {
         KeyMapping gui = menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));
         zoomKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.zoom", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_C, category));
         freelookKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.freelook", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, category));
+        waypointKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.nicoclient.waypoints", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_M, category));
         Reconnect.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (toggle.consumeClick()) { MODULES.fps.enabled = !MODULES.fps.enabled; MODULES.save(); }
             while (gui.consumeClick()) if (client.screen == null) client.setScreen(new NicoScreen());
+            while (waypointKey.consumeClick()) if (client.screen == null && client.player != null) client.setScreen(new WaypointScreen(null));
             applyOptions(client);
             Pickups.tick(client);
             Combat.tick(client);

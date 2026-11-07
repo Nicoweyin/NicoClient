@@ -111,3 +111,7 @@
 - The launcher was started with a debug port and two temporary profiles in the real game folder (removed afterward, as the folder did not exist before): a click on Minimal applied it, switched the Keystrokes tile off and showed "Profile Minimal applied". No script errors on any page.
 - `npm test`: 19 tests pass, including that profiles never change cosmetics, skip invalid keys and values, and cannot load files outside the profiles folder.
 - Not tested: profiles on a multiplayer server, and the installed 0.8.0 build.
+
+## 2026-11-07: waypoint menu on M
+- `gradle runClientGameTest` passed in a real client: pressing M during play opened the waypoint menu; a real click on the Chest waypoint started renaming it with the old name filled in, Backspace, typing "Loot" and Enter renamed it without adding a new one; the row switch hid only Farm; the top switch turned all waypoints off in the world and on again; Delete removed Farm; Escape closed the menu. Screenshot reviewed.
+- Not tested: changing the key in Minecraft's Controls, and the menu on a multiplayer server.

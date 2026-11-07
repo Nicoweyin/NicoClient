@@ -4,6 +4,7 @@ Early development release of NicoClient, an independent launcher and Fabric mod 
 - **Profiles:** save your modules, settings and HUD layout under a name and switch with one click. Four presets come with it: PvP, Survival, Performance and Minimal. Open them in the game (Right Shift, then Profiles) or apply them from the launcher's Home page. Cosmetics are never changed by a profile.
 - **Notifications:** switching a module by its key, saving a waypoint or loading a profile shows a small animated card above the hotbar.
 - **HUD editor:** modules snap to the screen edges, the middle and other modules, with a guide line while you drag. Hold Shift to place freely, and use the arrow keys to move the last module by one (five with Shift).
+- **Waypoint menu on M:** press M during play to add a waypoint where you stand or on the block you look at, click one to rename it, recolor, hide or delete it, and switch all markers on or off at the top. The key can be changed in Minecraft's Controls.
 - A running game now also takes HUD positions and key bindings from changes made in the launcher.
 
 **0.7.0: a new launcher.** A fresh design with a moving background, a bigger PLAY button and a Play button in the sidebar.

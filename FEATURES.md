@@ -64,6 +64,7 @@ The separate Fabric project has the HUD modules marked below, Zoom, Low Fire, Fu
 51. [x] Server-safe mode: pauses Freelook and Trajectories on public servers, on by default (client test with a simulated server; not tried on a real server)
 52. [x] Module rows show a category monogram, their hotkey and why a module is paused; the sidebar shows your face and name (screenshots reviewed)
 54. [x] Animated notification cards above the hotbar for hotkeys, waypoints, profiles and Server-safe mode (client test and screenshot)
+56. [x] Waypoint menu on its own key (M): add, mark block, rename, recolor, hide, delete, and a switch for all markers (client test with real keys and clicks)
 55. [x] HUD editor snaps to screen edges, the middle and other modules with guide lines; Shift for free placement; arrow keys nudge (client test with real mouse and key)
 53. [x] The launcher switches quick modules and sets accent color, HUD size and Server-safe mode; a running game follows within two seconds (launcher clicks and client test)
 

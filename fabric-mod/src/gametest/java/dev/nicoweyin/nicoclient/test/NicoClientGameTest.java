@@ -651,6 +651,50 @@ public final class NicoClientGameTest implements FabricClientGameTest {
                 m.waypoints.hotkey = -1;
             });
 
+            // The waypoint key (M) opens the menu during play; rename, hide, switch all off and delete with real clicks.
+            context.getInput().pressKey(GLFW.GLFW_KEY_M);
+            context.waitTicks(15);
+            context.runOnClient(client -> check(client.screen instanceof WaypointScreen, "M opens the waypoint menu: " + client.screen));
+            context.runOnClient(client -> Waypoints.add(client, "Farm"));
+            int[] chestName = context.computeOnClient(client -> ((WaypointScreen) client.screen).nameCenter(0));
+            moveTo(context, chestName[0], chestName[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.runOnClient(client -> {
+                WaypointScreen screen = (WaypointScreen) client.screen;
+                check(screen.renaming() && screen.typedName().equals("Chest"), "clicking a waypoint starts renaming it: " + screen.typedName());
+            });
+            for (int i = 0; i < 5; i++) context.getInput().pressKey(GLFW.GLFW_KEY_BACKSPACE);
+            context.getInput().typeChars("Loot");
+            context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+            context.waitTicks(3);
+            context.runOnClient(client -> {
+                check(Waypoints.here(client).get(0).name.equals("Loot"), "Enter renames the waypoint: " + Waypoints.here(client).get(0).name);
+                check(!((WaypointScreen) client.screen).renaming() && Waypoints.here(client).size() == 2, "renaming adds nothing");
+            });
+            int[] farmEye = context.computeOnClient(client -> ((WaypointScreen) client.screen).visibleCenter(1));
+            moveTo(context, farmEye[0], farmEye[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(5);
+            context.runOnClient(client -> check(!Waypoints.here(client).get(1).visible && Waypoints.here(client).get(0).visible, "the row switch hides only Farm"));
+            context.takeScreenshot("nicoclient-15f-waypoint-menu");
+            int[] master = context.computeOnClient(client -> ((WaypointScreen) client.screen).masterCenter());
+            moveTo(context, master[0], master[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(5);
+            context.runOnClient(client -> check(!m.waypoints.enabled, "the top switch turns all waypoints off in the world"));
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(m.waypoints.enabled, "and on again"));
+            int[] farmDelete = context.computeOnClient(client -> ((WaypointScreen) client.screen).deleteCenter(1));
+            moveTo(context, farmDelete[0], farmDelete[1]);
+            context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+            context.waitTicks(3);
+            context.runOnClient(client -> check(Waypoints.here(client).size() == 1 && Waypoints.here(client).get(0).name.equals("Loot"), "Delete removes Farm"));
+            context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE);
+            context.waitTicks(10);
+            context.runOnClient(client -> check(client.screen == null, "Escape closes the waypoint menu"));
+
             // Target HUD shows the pig just hit; Armor Warning reacts to a nearly broken helmet.
             world.getServer().runCommand("item replace entity @a armor.head with minecraft:iron_helmet[damage=160]");
             context.waitTicks(5);

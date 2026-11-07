@@ -100,6 +100,13 @@ public final class Waypoints {
 
     public static void remove(Waypoint point) { ALL.remove(point); save(); }
 
+    public static void rename(Waypoint point, String name) {
+        String clean = name == null ? "" : name.replace('\t', ' ').replace('\n', ' ').strip();
+        if (clean.isEmpty()) return;
+        point.name = clean.length() > MAX_NAME ? clean.substring(0, MAX_NAME) : clean;
+        save();
+    }
+
     public static void cycleColor(Waypoint point) {
         int index = 0;
         for (int i = 0; i < COLORS.length; i++) if (COLORS[i] == point.color) index = i;
