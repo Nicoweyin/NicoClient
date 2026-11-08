@@ -1,6 +1,6 @@
 Early development release of NicoClient, an independent launcher and Fabric mod for Minecraft Java 1.21.11.
 
-**New in 0.8.3: more reliable updates.**
+**New in 0.8.4: more reliable updates.**
 - When an update check or download fails, the launcher tries again after 5, 15 and 30 minutes, then every hour, instead of waiting four hours. The update notice says when the next try is.
 
 **New in 0.8.2: drag and drop mods.**
