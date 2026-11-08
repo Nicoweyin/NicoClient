@@ -365,3 +365,18 @@ test('dropped mods are copied in, originals stay, bad files are explained', () =
   await assert.rejects(addModFiles('nope', to), /Invalid/);
   assert.equal((await addModFiles(['relative.jar'], to)).skipped[0].reason, 'Not a file on this PC');
 }));
+
+test('failed update checks are retried within minutes, then hourly', () => {
+  const Module = require('node:module');
+  const load = Module._load;
+  Module._load = function (request, ...rest) {
+    if (request === 'electron') return { app: {}, BrowserWindow: { getAllWindows: () => [] }, ipcMain: { handle() {} } };
+    if (request === 'electron-updater') return { autoUpdater: { on() {} } };
+    return load.call(this, request, ...rest);
+  };
+  try {
+    delete require.cache[require.resolve('../dist/updater.js')];
+    const { retryDelay } = require('../dist/updater.js');
+    assert.deepEqual([1, 2, 3, 4, 9].map(n => retryDelay(n) / 60000), [5, 15, 30, 60, 60]);
+  } finally { Module._load = load; }
+});
