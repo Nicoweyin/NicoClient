@@ -77,9 +77,28 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # Electron and the installer tools come from GitHub release downloads, which sometimes fail for a while.
+      # The Actions cache keeps them between releases, and the build is retried before giving up.
+      - name: Cache Electron and installer tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-tools-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-tools-
+
       - name: Build the installer
-        run: npm run build && npx electron-builder --win nsis --publish never
         shell: bash
+        run: |
+          npm run build
+          for attempt in 1 2 3 4 5; do
+            if npx electron-builder --win nsis --publish never; then exit 0; fi
+            echo "::warning::Installer build attempt $attempt failed, probably a download. Trying again."
+            sleep $((attempt * 60))
+          done
+          echo "::error::The installer could not be built after 5 attempts."
+          exit 1
 
       # One command with all files, so uploads cannot race and create duplicate releases.
       - name: Publish the release
