@@ -71,12 +71,6 @@ jobs:
             exit 1
           fi
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
       # Electron and the installer tools come from GitHub release downloads, which sometimes fail for a while.
       # The Actions cache keeps them between releases, and the build is retried before giving up.
       - name: Cache Electron and installer tools
@@ -87,6 +81,15 @@ jobs:
             ~/AppData/Local/electron-builder/Cache
           key: electron-tools-${{ hashFiles('package-lock.json') }}
           restore-keys: electron-tools-
+
+      # The tests never start Electron, and the installer build gets its own copy, so npm skips that download.
+      - name: Install dependencies
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+      - name: Run tests
+        run: npm test
 
       - name: Build the installer
         shell: bash
